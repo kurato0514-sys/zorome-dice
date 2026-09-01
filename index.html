@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ゾロ目ダイス">
+<title>ゾロ目ダイス</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1>ゾロ目ダイス</h1>
+      <div class="topbar-right">
+        <button id="shopBtn" class="shop-btn" type="button">🛍️ ストア</button>
+        <div class="record">最高 <span id="bestCount">2</span>個</div>
+      </div>
+    </header>
+
+    <div class="progress-wrap">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-label"><span id="diceCount">2</span> / <span id="maxCount">15</span></div>
+    </div>
+
+    <div class="stage-info">
+      <div class="stat">
+        <span class="stat-label">確率</span>
+        <span class="stat-value" id="probValue">16.67%</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">この面 <span id="stageBestTime"></span></span>
+        <span class="stat-value" id="stageTime">0.0s</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">合計</span>
+        <span class="stat-value" id="totalTime">0.0s</span>
+      </div>
+    </div>
+
+    <div class="tray" id="tray">
+      <div class="reach-badge" id="reachBadge">リーチ！</div>
+      <main class="board" id="board"></main>
+    </div>
+
+    <div class="message" id="message">2個のサイコロを振って、ゾロ目を出そう！</div>
+
+    <div class="settings-row">
+      <span class="settings-label">📳 本体を振って振る</span>
+      <button id="shakeToggle" class="toggle" type="button" aria-pressed="false"><span class="toggle-knob"></span></button>
+    </div>
+
+    <div class="skins" id="skins">
+      <div class="skin-row">
+        <span class="skin-row-label">サイコロ</span>
+        <div class="skin-swatches" id="diceSwatches"></div>
+      </div>
+      <div class="skin-row">
+        <span class="skin-row-label">お皿</span>
+        <div class="skin-swatches" id="traySwatches"></div>
+      </div>
+    </div>
+
+    <footer class="controls">
+      <button id="rollBtn" class="roll-btn">
+        <span class="roll-btn-label">振る</span>
+      </button>
+      <button id="resetBtn" class="reset-btn">最初から</button>
+    </footer>
+  </div>
+
+  <div class="confetti-layer" id="confetti"></div>
+
+  <div class="zorome-popup" id="zoromePopup">ゾロ目</div>
+
+  <div class="sakibare-flash" id="sakibareFlash"></div>
+  <div class="sakibare-badge" id="sakibareBadge">激アツ予感…</div>
+
+  <div class="shutter" id="shutter">
+    <div class="shutter-panel shutter-left"></div>
+    <div class="shutter-panel shutter-right"></div>
+    <div class="shutter-text">激アツ!!</div>
+  </div>
+
+  <div class="kiseru-effect" id="kiseruEffect">
+    <div class="kiseru-ember"></div>
+  </div>
+
+  <div class="cutin-card" id="cutinCard">
+    <div class="cutin-pattern"></div>
+    <div class="cutin-text">激アツ!!</div>
+  </div>
+
+  <div class="mob-preview" id="mobPreview"></div>
+
+  <div class="blackout" id="blackout"></div>
+  <div class="alien-peek" id="alienPeek">👽</div>
+
+  <div class="ad-overlay" id="adOverlay">
+    <div class="ad-card">
+      <div class="ad-badge">広告</div>
+      <div class="ad-visual">
+        <div class="ad-visual-bar"></div>
+      </div>
+      <div class="ad-caption">ひろこく中… <span id="adCountdown">5</span></div>
+      <button id="adCloseBtn" class="ad-close-btn" disabled>広告を閉じる</button>
+      <button id="adRemoveBtn" class="ad-remove-btn">広告を非表示にする（¥300）</button>
+    </div>
+  </div>
+
+  <div class="store-overlay" id="storeOverlay">
+    <div class="store-card">
+      <div class="store-header">
+        <span>ストア</span>
+        <button id="storeCloseBtn" class="store-close-btn" type="button">✕</button>
+      </div>
+      <div class="store-note">※ここでの購入はテスト表示です。実際の決済には別途設定が必要です。</div>
+      <div class="store-items" id="storeItems"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
