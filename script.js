@@ -1746,6 +1746,7 @@
   }
 
   const MILESTONES = [5, 10, 15];
+  const GASE_SAKIBARE_RATE = 0.18; // 外れる回にも先バレが出てしまう「ガセ」の発生率
 
   function isBigChance(count, matched) {
     if (!matched) return false;
@@ -1793,8 +1794,11 @@
     }
     const bigChance = isFrontier && isBigChance(playCount, matched);
     // プレミアム演出を購入していれば、節目ステージ限定ではなく全ステージの
-    // 勝利で先バレ・激熱演出が発生する
-    const showBigChance = matched && state.owned.effectPack;
+    // 勝利で先バレ・激熱演出が発生する。ただし勝つ回だけに絞ると「先バレ＝
+    // 確定」になってしまうので、外れる回にも一定確率で「ガセ」を混ぜて
+    // 本物のパチスロらしい駆け引きを再現する
+    const showBigChance =
+      state.owned.effectPack && (matched || Math.random() < GASE_SAKIBARE_RATE);
     // the alien "kakutei" peek is rare and — like a real premonition cue —
     // flashes just before the last die locks in, not after the win is shown
     const willPeekAlien = matched && (bigChance || Math.random() < 0.12);
