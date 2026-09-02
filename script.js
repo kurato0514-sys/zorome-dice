@@ -225,16 +225,15 @@
   }
 
   // ---- 3D dice ----
-  function buildDie(value, locked) {
+  function buildDie(value, locked, size) {
     const scene = document.createElement("div");
     scene.className = "die" + (locked ? " locked" : "");
+    if (size) {
+      scene.style.width = size + "px";
+      scene.style.height = size + "px";
+      scene.style.setProperty("--die-half", size / 2 + "px");
+    }
     if (locked) return scene;
-
-    // scatter each die slightly so they don't look laser-aligned, like real
-    // dice settling unevenly in a bowl
-    scene.style.setProperty("--rest-x", (Math.random() * 12 - 6).toFixed(1) + "px");
-    scene.style.setProperty("--rest-y", (Math.random() * 12 - 6).toFixed(1) + "px");
-    scene.style.setProperty("--rest-rot", (Math.random() * 26 - 13).toFixed(1) + "deg");
 
     const cube = document.createElement("div");
     cube.className = "die-cube " + diceThemeClass();
@@ -260,17 +259,142 @@
     if (cube) cube.style.transform = FACE_TRANSFORM[value];
   }
 
-  let dieSizeRaf = null;
-  function updateDieSize() {
-    if (dieSizeRaf) cancelAnimationFrame(dieSizeRaf);
-    dieSizeRaf = requestAnimationFrame(() => {
-      const sample = board.querySelector(".die:not(.locked)");
-      if (!sample) return;
-      const w = sample.getBoundingClientRect().width;
-      if (w > 0) document.documentElement.style.setProperty("--die-half", w / 2 + "px");
+  // ---- physics arena: dice are tossed in from above and actually roll
+  // around and bump into each other and the walls, instead of just
+  // spinning in place ----
+  function layoutArena(count) {
+    const arenaWidth = board.clientWidth || tray.clientWidth - 32 || 320;
+    const dieSize = count <= 4 ? 70 : count <= 8 ? 58 : count <= 12 ? 48 : 40;
+    const cols = Math.max(1, Math.floor(arenaWidth / (dieSize + 14)));
+    const rows = Math.ceil(count / cols);
+    const arenaHeight = Math.max(230, rows * (dieSize + 30) + 40);
+    board.style.height = arenaHeight + "px";
+    return { arenaWidth, arenaHeight, dieSize, cols };
+  }
+
+  function scatterRestPositions(diceEls, layout) {
+    const { arenaWidth, dieSize, cols } = layout;
+    diceEls.forEach((el, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cellW = arenaWidth / cols;
+      const baseX = col * cellW + cellW / 2 - dieSize / 2;
+      const baseY = row * (dieSize + 30) + 16;
+      const jx = Math.random() * 14 - 7;
+      const jy = Math.random() * 10 - 5;
+      const rot = Math.round(Math.random() * 26 - 13);
+      el.style.left = Math.round(baseX + jx) + "px";
+      el.style.top = Math.round(baseY + jy) + "px";
+      el.style.transform = "rotate(" + rot + "deg)";
     });
   }
-  window.addEventListener("resize", updateDieSize);
+
+  function stepDicePhysics(bodies, arenaWidth, arenaHeight, dt) {
+    const gravity = 1500;
+    const wallRestitution = 0.42;
+    const damping = 0.985;
+
+    bodies.forEach((b) => {
+      b.vy += gravity * dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.angle += b.vAngle * dt;
+
+      if (b.x - b.r < 0) { b.x = b.r; b.vx = -b.vx * wallRestitution; }
+      if (b.x + b.r > arenaWidth) { b.x = arenaWidth - b.r; b.vx = -b.vx * wallRestitution; }
+      if (b.y - b.r < 0) { b.y = b.r; b.vy = -b.vy * wallRestitution; }
+      if (b.y + b.r > arenaHeight) {
+        b.y = arenaHeight - b.r;
+        b.vy = -b.vy * wallRestitution;
+        b.vAngle *= 0.6;
+        b.vx *= 0.92;
+      }
+
+      b.vx *= damping;
+      b.vy *= damping;
+      b.vAngle *= damping;
+    });
+
+    for (let i = 0; i < bodies.length; i++) {
+      for (let j = i + 1; j < bodies.length; j++) {
+        const a = bodies[i];
+        const c = bodies[j];
+        const dx = c.x - a.x;
+        const dy = c.y - a.y;
+        const dist = Math.hypot(dx, dy) || 0.0001;
+        const minDist = a.r + c.r;
+        if (dist < minDist) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const overlap = (minDist - dist) / 2;
+          a.x -= nx * overlap;
+          a.y -= ny * overlap;
+          c.x += nx * overlap;
+          c.y += ny * overlap;
+
+          const rvx = c.vx - a.vx;
+          const rvy = c.vy - a.vy;
+          const relVel = rvx * nx + rvy * ny;
+          if (relVel < 0) {
+            const bounce = 0.5;
+            const impulse = (-(1 + bounce) * relVel) / 2;
+            a.vx -= impulse * nx;
+            a.vy -= impulse * ny;
+            c.vx += impulse * nx;
+            c.vy += impulse * ny;
+            a.vAngle += (Math.random() - 0.5) * 6;
+            c.vAngle += (Math.random() - 0.5) * 6;
+          }
+        }
+      }
+    }
+  }
+
+  function tossDiceIn(diceEls, layout, durationMs) {
+    const { arenaWidth, arenaHeight, dieSize } = layout;
+    return new Promise((resolve) => {
+      const r = dieSize / 2;
+      const bodies = diceEls.map((el) => ({
+        el,
+        x: arenaWidth * (0.12 + Math.random() * 0.76),
+        y: -dieSize - Math.random() * 90,
+        vx: (Math.random() - 0.5) * 240,
+        vy: 460 + Math.random() * 220,
+        angle: Math.random() * 40 - 20,
+        vAngle: (Math.random() - 0.5) * 10,
+        r,
+      }));
+
+      diceEls.forEach((el) => {
+        const cube = el.querySelector(".die-cube");
+        if (cube) cube.classList.add("spin");
+      });
+
+      const start = performance.now();
+      let last = start;
+
+      function frame(now) {
+        const dt = Math.min(0.032, (now - last) / 1000);
+        last = now;
+        stepDicePhysics(bodies, arenaWidth, arenaHeight, dt);
+        bodies.forEach((b) => {
+          b.el.style.left = b.x - b.r + "px";
+          b.el.style.top = b.y - b.r + "px";
+          b.el.style.transform = "rotate(" + b.angle.toFixed(1) + "deg)";
+        });
+        if (now - start < durationMs) {
+          requestAnimationFrame(frame);
+        } else {
+          diceEls.forEach((el) => {
+            const cube = el.querySelector(".die-cube");
+            if (cube) cube.classList.remove("spin");
+          });
+          resolve();
+        }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
 
   // ---- skin unlock levels (each store-exclusive skin is sold separately) ----
   function isDiceSkinUnlocked(id) {
@@ -431,7 +555,6 @@
     rollBtn.querySelector(".roll-btn-label").textContent = "振る";
     renderPlay();
     setMessage("サイコロを振って、ゾロ目を出そう！");
-    updateDieSize();
   }
 
   function backToSelect() {
@@ -443,13 +566,22 @@
   function renderPlay() {
     tray.className = "tray " + trayThemeClass();
     board.innerHTML = "";
+    const layout = layoutArena(selectedStage);
+    const diceEls = [];
     for (let i = 0; i < selectedStage; i++) {
-      board.appendChild(buildDie(playValues[i], false));
+      const die = buildDie(playValues[i], false, layout.dieSize);
+      board.appendChild(die);
+      diceEls.push(die);
     }
+    scatterRestPositions(diceEls, layout);
     probValueEl.textContent = formatProbability(selectedStage);
     const best = state.stageBestMs[selectedStage];
     stageBestTimeEl.textContent = best ? "(自己ベスト " + formatTime(best) + ")" : "";
   }
+
+  window.addEventListener("resize", () => {
+    if (!playScreen.hidden) renderPlay();
+  });
 
   function setMessage(text, mode) {
     message.textContent = text;
@@ -959,15 +1091,18 @@
 
   async function playMobPreview() {
     mobPreview.innerHTML = "";
-    const iconCount = 14 + Math.floor(Math.random() * 6);
+    const iconCount = 45 + Math.floor(Math.random() * 20);
     const faces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
     for (let i = 0; i < iconCount; i++) {
       const el = document.createElement("div");
       el.className = "mob-icon";
       el.textContent = faces[Math.floor(Math.random() * faces.length)];
-      el.style.left = Math.random() * 92 + "%";
-      el.style.top = Math.random() * 90 + "%";
-      el.style.animationDelay = Math.random() * 0.35 + "s";
+      const scale = 0.5 + Math.random() * 0.9;
+      el.style.left = Math.random() * 96 + "%";
+      el.style.top = Math.random() * 94 + "%";
+      el.style.fontSize = (1.1 * scale).toFixed(2) + "rem";
+      el.style.width = el.style.height = Math.round(52 * scale) + "px";
+      el.style.animationDelay = Math.random() * 0.5 + "s";
       mobPreview.appendChild(el);
     }
     sakibareBadge.textContent = "群予告！";
@@ -1364,15 +1499,10 @@
 
     if (showBigChance) await playSakibare();
 
-    dice.forEach((d) => {
-      d.style.setProperty("--toss-x", Math.round(Math.random() * 26 - 13) + "px");
-      d.style.animationDelay = -(Math.random() * 0.5).toFixed(2) + "s"; // desync so dice look like they're jostling each other, not moving in lockstep
-      d.classList.add("rolling");
-    });
     setMessage(showBigChance ? "予感がする…！" : "振っています…");
-    playDiceRollSound(650);
-    await sleep(650);
-    dice.forEach((d) => d.classList.remove("rolling"));
+    const layout = layoutArena(playCount);
+    playDiceRollSound(950);
+    await tossDiceIn(dice, layout, 950);
 
     let matchingSoFar = true;
     for (let i = 0; i < dice.length; i++) {
@@ -1384,11 +1514,7 @@
       // "reach" only means something with exactly one die left to reveal —
       // everything else already matches, and this last one decides it all
       if (matchingSoFar && remaining.length === 1) {
-        remaining.forEach((d) => {
-          d.style.setProperty("--toss-x", Math.round(Math.random() * 26 - 13) + "px");
-          d.style.animationDelay = -(Math.random() * 0.5).toFixed(2) + "s";
-          d.classList.add("reach");
-        });
+        remaining.forEach((d) => d.classList.add("reach"));
         tray.classList.add("reach");
         reachBadge.classList.add("show");
         setMessage("リーチ！！", "win");

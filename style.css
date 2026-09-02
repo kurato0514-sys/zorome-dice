@@ -427,26 +427,18 @@ body {
 }
 
 .board {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px 12px;
-  align-content: start;
-  padding-top: 10px;
+  position: relative;
   transform: rotateX(26deg);
   transform-style: preserve-3d;
 }
 
-@media (min-width: 420px) {
-  .board { grid-template-columns: repeat(5, 1fr); }
-}
-
 /* ===== 3D dice ===== */
 .die {
-  aspect-ratio: 1;
+  position: absolute;
+  left: 0;
+  top: 0;
   perspective: 500px;
-  position: relative;
-  transform: translate(var(--rest-x, 0px), var(--rest-y, 0px)) rotate(var(--rest-rot, 0deg));
-  transition: transform 0.35s ease;
+  will-change: transform;
 }
 
 .die.locked {
@@ -476,21 +468,9 @@ body {
   transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.die.rolling,
-.die.reach {
-  animation: die-toss 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
-}
-
-@keyframes die-toss {
-  0% { transform: translate(0, -46%) rotate(0deg) scale(1.18); }
-  14% { transform: translate(var(--toss-x, 0px), 8%) rotate(7deg) scale(1.06); }
-  28% { transform: translate(calc(var(--toss-x, 0px) * -0.8), -22%) rotate(-10deg) scale(1.03); }
-  40% { transform: translate(calc(var(--toss-x, 0px) * 0.7), 10%) rotate(9deg) scale(1.05); }
-  52% { transform: translate(calc(var(--toss-x, 0px) * -0.5), -12%) rotate(-7deg) scale(1.02); }
-  64% { transform: translate(calc(var(--toss-x, 0px) * 0.35), 6%) rotate(5deg) scale(1.03); }
-  76% { transform: translate(calc(var(--toss-x, 0px) * -0.2), -6%) rotate(-3deg) scale(1.01); }
-  88% { transform: translate(0, 3%) rotate(2deg) scale(1.01); }
-  100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+.die-cube.spin {
+  animation: die-tumble 0.35s linear infinite;
+  transition: none;
 }
 
 .die.rolling .die-cube,
