@@ -769,8 +769,8 @@ body {
   border-left: 2px solid rgba(0,0,0,0.4);
 }
 .shutter-right { transform: translateX(100%); }
-.shutter.show .shutter-left { animation: shutter-left-anim 0.95s cubic-bezier(0.5, 0, 0.75, 0) forwards; }
-.shutter.show .shutter-right { animation: shutter-right-anim 0.95s cubic-bezier(0.5, 0, 0.75, 0) forwards; }
+.shutter.show .shutter-left { animation: shutter-left-anim 1.3s cubic-bezier(0.5, 0, 0.75, 0) forwards; }
+.shutter.show .shutter-right { animation: shutter-right-anim 1.3s cubic-bezier(0.5, 0, 0.75, 0) forwards; }
 @keyframes shutter-left-anim {
   0% { transform: translateX(-100%); }
   32% { transform: translateX(3%); }
@@ -801,7 +801,7 @@ body {
   opacity: 0;
 }
 .shutter.show .shutter-text {
-  animation: shutter-text-anim 0.95s ease forwards;
+  animation: shutter-text-anim 1.3s ease forwards;
 }
 @keyframes shutter-text-anim {
   0%, 34% { opacity: 0; }
@@ -817,7 +817,7 @@ body {
   opacity: 0;
 }
 .kiseru-effect.show {
-  animation: kiseru-fade 1.7s ease forwards;
+  animation: kiseru-fade 2.3s ease forwards;
 }
 @keyframes kiseru-fade {
   0% { opacity: 0; }
@@ -876,7 +876,7 @@ body {
   opacity: 0;
 }
 .kiseru-effect.show .kiseru-ember {
-  animation: kiseru-ember-glow 1.7s ease forwards;
+  animation: kiseru-ember-glow 2.3s ease forwards;
 }
 @keyframes kiseru-ember-glow {
   0% { opacity: 0; transform: scale(0.6); }
@@ -898,7 +898,7 @@ body {
   filter: blur(1px);
 }
 .kiseru-smoke.show {
-  animation: kiseru-smoke-rise 1.9s ease-out forwards;
+  animation: kiseru-smoke-rise 2.5s ease-out forwards;
 }
 @keyframes kiseru-smoke-rise {
   0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
@@ -920,7 +920,7 @@ body {
   border-bottom: 3px solid var(--heat-color);
 }
 .cutin-card.show {
-  animation: cutin-slide 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: cutin-slide 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes cutin-slide {
   0% { transform: translateX(100%); }

@@ -915,10 +915,10 @@
     shutter.classList.remove("show");
     void shutter.offsetWidth;
     shutter.classList.add("show");
-    await sleep(330); // lines up with the slam+overshoot in the CSS animation
+    await sleep(460); // lines up with the slam+overshoot in the CSS animation
     playMetalClank();
     vibrate([50]);
-    await sleep(620);
+    await sleep(840);
     shutter.classList.remove("show");
   }
 
@@ -943,7 +943,7 @@
     requestAnimationFrame(() => {
       kiseruSmokeLayer.querySelectorAll(".kiseru-smoke").forEach((el) => el.classList.add("show"));
     });
-    await sleep(1700);
+    await sleep(2300);
     kiseruEffect.classList.remove("show");
     sakibareBadge.classList.remove("show");
     kiseruSmokeLayer.innerHTML = "";
@@ -953,7 +953,7 @@
     cutinCard.classList.remove("show");
     void cutinCard.offsetWidth;
     cutinCard.classList.add("show");
-    await sleep(1000);
+    await sleep(1400);
     cutinCard.classList.remove("show");
   }
 
@@ -977,7 +977,7 @@
       mobPreview.querySelectorAll(".mob-icon").forEach((el) => el.classList.add("show"));
       sakibareBadge.classList.add("show");
     });
-    await sleep(950);
+    await sleep(1300);
     sakibareBadge.classList.remove("show");
     mobPreview.innerHTML = "";
   }
@@ -1001,7 +1001,7 @@
       confettiLayer.appendChild(piece);
       setTimeout(() => piece.remove(), (duration + 0.5) * 1000);
     }
-    await sleep(950);
+    await sleep(1300);
     sakibareBadge.classList.remove("show");
   }
 
@@ -1026,13 +1026,13 @@
 
   async function playKakuteiEffect() {
     blackout.classList.add("show");
-    await sleep(200);
+    await sleep(280);
     alienPeek.classList.add("show");
-    await sleep(480);
+    await sleep(700);
     blackout.classList.remove("show");
-    await sleep(120);
-    alienPeek.classList.remove("show");
     await sleep(150);
+    alienPeek.classList.remove("show");
+    await sleep(200);
   }
 
   let toastTimer = null;
