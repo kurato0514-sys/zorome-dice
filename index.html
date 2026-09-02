@@ -19,62 +19,80 @@
     <header class="topbar">
       <h1>ゾロ目ダイス</h1>
       <div class="topbar-right">
+        <button id="testBtn" class="shop-btn" type="button">🧪 テスト</button>
         <button id="shopBtn" class="shop-btn" type="button">🛍️ ストア</button>
         <div class="record">最高 <span id="bestCount">2</span>個</div>
       </div>
     </header>
 
-    <div class="progress-wrap">
-      <div class="progress-bar">
-        <div class="progress-fill" id="progressFill"></div>
+    <!-- ===== ステージ選択画面 ===== -->
+    <section class="screen" id="selectScreen">
+      <div class="progress-wrap">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-label"><span id="diceCount">2</span> / <span id="maxCount">15</span></div>
       </div>
-      <div class="progress-label"><span id="diceCount">2</span> / <span id="maxCount">15</span></div>
-    </div>
 
-    <div class="stage-info">
-      <div class="stat">
-        <span class="stat-label">確率</span>
-        <span class="stat-value" id="probValue">16.67%</span>
+      <div class="stage-list" id="stageList"></div>
+
+      <div class="settings-row">
+        <span class="settings-label">📳 本体を振って振る</span>
+        <button id="shakeToggle" class="toggle" type="button" aria-pressed="false"><span class="toggle-knob"></span></button>
       </div>
-      <div class="stat">
-        <span class="stat-label">この面 <span id="stageBestTime"></span></span>
-        <span class="stat-value" id="stageTime">0.0s</span>
+
+      <div class="skins" id="skins">
+        <div class="skin-row">
+          <span class="skin-row-label">サイコロ</span>
+          <div class="skin-swatches" id="diceSwatches"></div>
+        </div>
+        <div class="skin-row">
+          <span class="skin-row-label">お皿</span>
+          <div class="skin-swatches" id="traySwatches"></div>
+        </div>
+        <div class="skin-row">
+          <span class="skin-row-label">サウンド</span>
+          <div class="skin-swatches" id="soundSwatches"></div>
+        </div>
       </div>
-      <div class="stat">
-        <span class="stat-label">合計</span>
-        <span class="stat-value" id="totalTime">0.0s</span>
+    </section>
+
+    <!-- ===== プレー画面 ===== -->
+    <section class="screen" id="playScreen" hidden>
+      <div class="play-header">
+        <button id="backBtn" class="back-btn" type="button">← ステージ選択</button>
+        <div class="play-stage-label">ステージ <span id="playStageNum">2</span></div>
       </div>
-    </div>
 
-    <div class="tray" id="tray">
-      <div class="reach-badge" id="reachBadge">リーチ！</div>
-      <main class="board" id="board"></main>
-    </div>
-
-    <div class="message" id="message">2個のサイコロを振って、ゾロ目を出そう！</div>
-
-    <div class="settings-row">
-      <span class="settings-label">📳 本体を振って振る</span>
-      <button id="shakeToggle" class="toggle" type="button" aria-pressed="false"><span class="toggle-knob"></span></button>
-    </div>
-
-    <div class="skins" id="skins">
-      <div class="skin-row">
-        <span class="skin-row-label">サイコロ</span>
-        <div class="skin-swatches" id="diceSwatches"></div>
+      <div class="stage-info">
+        <div class="stat">
+          <span class="stat-label">確率</span>
+          <span class="stat-value" id="probValue">1/6</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">この面 <span id="stageBestTime"></span></span>
+          <span class="stat-value" id="stageTime">0.0s</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">合計</span>
+          <span class="stat-value" id="totalTime">0.0s</span>
+        </div>
       </div>
-      <div class="skin-row">
-        <span class="skin-row-label">お皿</span>
-        <div class="skin-swatches" id="traySwatches"></div>
-      </div>
-    </div>
 
-    <footer class="controls">
-      <button id="rollBtn" class="roll-btn">
-        <span class="roll-btn-label">振る</span>
-      </button>
-      <button id="resetBtn" class="reset-btn">最初から</button>
-    </footer>
+      <div class="tray" id="tray">
+        <div class="reach-badge" id="reachBadge">リーチ！</div>
+        <main class="board" id="board"></main>
+      </div>
+
+      <div class="message" id="message">サイコロを振って、ゾロ目を出そう！</div>
+
+      <footer class="controls">
+        <button id="rollBtn" class="roll-btn">
+          <span class="roll-btn-label">振る</span>
+        </button>
+        <button id="backBtn2" class="reset-btn">戻る</button>
+      </footer>
+    </section>
   </div>
 
   <div class="confetti-layer" id="confetti"></div>
@@ -128,6 +146,32 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="store-overlay" id="testOverlay">
+    <div class="store-card">
+      <div class="store-header">
+        <span>テストパネル</span>
+        <button id="testCloseBtn" class="store-close-btn" type="button">✕</button>
+      </div>
+      <div class="store-note">各演出・サウンドを単体で確認できます（本番プレイには影響しません）。</div>
+      <div class="test-section">
+        <div class="test-section-title">激熱色（信頼度プレビュー）</div>
+        <div class="test-btn-row" id="testColorBtns"></div>
+      </div>
+      <div class="test-section">
+        <div class="test-section-title">激熱演出</div>
+        <div class="test-btn-row" id="testEffectBtns"></div>
+      </div>
+      <div class="test-section">
+        <div class="test-section-title">確定演出・その他</div>
+        <div class="test-btn-row" id="testMiscBtns"></div>
+      </div>
+      <div class="test-section">
+        <div class="test-section-title">サウンド</div>
+        <div class="test-btn-row" id="testSoundBtns"></div>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
