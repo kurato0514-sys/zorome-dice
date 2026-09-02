@@ -16,7 +16,7 @@
 </head>
 <body>
   <div class="app">
-    <header class="topbar">
+    <header class="topbar" id="topbar" hidden>
       <h1>ゾロ目ダイス</h1>
       <div class="topbar-right">
         <button id="testBtn" class="shop-btn" type="button">🧪 テスト</button>
@@ -25,8 +25,30 @@
       </div>
     </header>
 
+    <!-- ===== オープニング画面 ===== -->
+    <section class="screen opening-screen" id="openingScreen">
+      <div class="opening-content">
+        <div class="brain-chart">
+          <div class="brain-chart-circle"></div>
+          <span class="brain-label" style="--a:18deg">運</span>
+          <span class="brain-label" style="--a:54deg">熱</span>
+          <span class="brain-label" style="--a:90deg">金</span>
+          <span class="brain-label" style="--a:126deg">汁</span>
+          <span class="brain-label" style="--a:162deg">夢</span>
+          <span class="brain-label" style="--a:198deg">覚醒</span>
+          <span class="brain-label" style="--a:234deg">直感</span>
+          <span class="brain-label" style="--a:270deg">爆</span>
+          <span class="brain-label" style="--a:306deg">神</span>
+          <span class="brain-label" style="--a:342deg">執念</span>
+          <div class="brain-chart-center">脳汁</div>
+        </div>
+        <h1 class="opening-title">脳汁メーカー<br><span>～Let's ゾロ目～</span></h1>
+        <button id="startBtn" class="roll-btn opening-start-btn" type="button">タップしてスタート</button>
+      </div>
+    </section>
+
     <!-- ===== ステージ選択画面 ===== -->
-    <section class="screen" id="selectScreen">
+    <section class="screen" id="selectScreen" hidden>
       <div class="progress-wrap">
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
@@ -73,6 +95,10 @@
         <div class="stat">
           <span class="stat-label">この面 <span id="stageBestTime"></span></span>
           <span class="stat-value" id="stageTime">0.0s</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">回数</span>
+          <span class="stat-value" id="rollCount">0</span>
         </div>
       </div>
 

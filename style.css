@@ -50,6 +50,7 @@ body {
   margin-bottom: 14px;
   gap: 8px;
 }
+.topbar[hidden] { display: none; }
 
 .topbar-right {
   display: flex;
@@ -80,6 +81,103 @@ body {
 .record span {
   color: var(--gold);
   font-weight: 700;
+}
+
+/* ===== opening screen ===== */
+.opening-screen {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 18px;
+}
+
+.opening-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.brain-chart {
+  position: relative;
+  width: 230px;
+  height: 230px;
+}
+
+.brain-chart-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(
+    #ff3b5c 0% 10%,
+    #ff8a1e 10% 20%,
+    #ffd700 20% 30%,
+    #a8e63a 30% 40%,
+    #2ee6a8 40% 50%,
+    #2ec4e6 50% 60%,
+    #4d9fff 60% 70%,
+    #7a5dff 70% 80%,
+    #c74dff 80% 90%,
+    #ff4dc4 90% 100%
+  );
+  box-shadow: 0 0 0 4px var(--card-border), 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.brain-chart-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 74px;
+  height: 74px;
+  margin: -37px 0 0 -37px;
+  border-radius: 50%;
+  background: #1a1a2e;
+  border: 3px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--gold);
+}
+
+.brain-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  margin-left: -22px;
+  margin-top: -0.6em;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 0 3px #000, 0 0 6px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.9);
+  transform: rotate(var(--a)) translate(0, -102px) rotate(calc(-1 * var(--a)));
+}
+
+.opening-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+}
+.opening-title span {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+
+.opening-start-btn {
+  padding: 16px 40px;
+  animation: opening-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes opening-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
 }
 
 /* ===== screens ===== */
@@ -306,6 +404,11 @@ body {
 .swatch[data-kind="tray"][data-skin="6"] { background: radial-gradient(circle at 50% 25%, #d4af37, #7a1220 85%); }
 .swatch[data-kind="tray"][data-skin="7"] { background: radial-gradient(circle at 50% 25%, #3a4d9e, #0d1638 75%); }
 .swatch[data-kind="tray"][data-skin="8"] { background: repeating-linear-gradient(#0b0f0b 0 3px, #10230f 3px 6px); box-shadow: inset 0 0 0 2px #39ff14; }
+.swatch[data-kind="tray"][data-skin="9"] { background-color: #d9a441; background-image: radial-gradient(ellipse 5px 4px at 30% 30%, #6b3f14 60%, transparent 61%), radial-gradient(ellipse 4px 5px at 65% 60%, #6b3f14 60%, transparent 61%), radial-gradient(ellipse 4px 3px at 80% 25%, #6b3f14 60%, transparent 61%); }
+.swatch[data-kind="tray"][data-skin="10"] { background: repeating-linear-gradient(60deg, #1a1a1a 0 4px, #f4f2ff 4px 8px); }
+.swatch[data-kind="tray"][data-skin="11"] { background-color: #d81f1f; background-image: radial-gradient(circle 4px at 30% 35%, #0d0d0d 90%, transparent 91%), radial-gradient(circle 3px at 65% 60%, #0d0d0d 90%, transparent 91%), radial-gradient(circle 4px at 75% 25%, #0d0d0d 90%, transparent 91%); }
+.swatch[data-kind="tray"][data-skin="12"] { background: repeating-linear-gradient(-35deg, #e8791a 0 5px, #1a1108 5px 8px); }
+.swatch[data-kind="tray"][data-skin="13"] { background: repeating-linear-gradient(-45deg, #ffd700 0 6px, #1a1a1a 6px 12px); }
 
 /* ===== play screen ===== */
 .play-header {
@@ -426,6 +529,50 @@ body {
     radial-gradient(circle at 50% 30%, #3a1a5c, #0c0620 75%);
 }
 
+.tray.tray-hanafuda {
+  background: radial-gradient(circle at 50% 25%, #7a1220, #3d0810 75%);
+}
+.tray.tray-maneki {
+  background: radial-gradient(circle at 50% 25%, #d4af37, #7a1220 85%);
+}
+.tray.tray-matsuri {
+  background: radial-gradient(circle at 50% 25%, #3a4d9e, #0d1638 75%);
+}
+.tray.tray-retro {
+  background-color: #0b0f0b;
+  background-image: repeating-linear-gradient(#0b0f0b 0 3px, #10230f 3px 6px);
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), inset 0 0 0 2px #39ff14;
+}
+
+.tray.tray-giraffe {
+  background-color: #d9a441;
+  background-image:
+    radial-gradient(ellipse 34px 26px at 12% 20%, #6b3f14 0 60%, transparent 61%),
+    radial-gradient(ellipse 26px 32px at 40% 55%, #6b3f14 0 60%, transparent 61%),
+    radial-gradient(ellipse 30px 22px at 68% 25%, #6b3f14 0 60%, transparent 61%),
+    radial-gradient(ellipse 24px 28px at 85% 60%, #6b3f14 0 60%, transparent 61%),
+    radial-gradient(ellipse 28px 20px at 25% 85%, #6b3f14 0 60%, transparent 61%),
+    radial-gradient(ellipse 22px 26px at 60% 90%, #6b3f14 0 60%, transparent 61%);
+}
+.tray.tray-zebra {
+  background: repeating-linear-gradient(58deg, #161620 0 10px, #f4f2ff 10px 22px);
+}
+.tray.tray-ladybug {
+  background-color: #d81f1f;
+  background-image:
+    radial-gradient(circle 16px at 18% 25%, #0d0d0d 90%, transparent 91%),
+    radial-gradient(circle 12px at 45% 60%, #0d0d0d 90%, transparent 91%),
+    radial-gradient(circle 18px at 72% 20%, #0d0d0d 90%, transparent 91%),
+    radial-gradient(circle 14px at 85% 65%, #0d0d0d 90%, transparent 91%),
+    radial-gradient(circle 13px at 30% 88%, #0d0d0d 90%, transparent 91%);
+}
+.tray.tray-tiger {
+  background: repeating-linear-gradient(-35deg, #e8791a 0 24px, #1a1108 24px 38px);
+}
+.tray.tray-danger {
+  background: repeating-linear-gradient(-45deg, #ffd700 0 26px, #1a1a1a 26px 52px);
+}
+
 .board {
   position: relative;
   transform: rotateX(26deg);
@@ -519,6 +666,12 @@ body {
 }
 .pip.on { opacity: 1; }
 
+/* the "1" face gets a bit of traditional dice specialness — a red pip */
+.die-face[data-value="1"] .pip.on {
+  background: #d92b2b;
+  box-shadow: 0 0 6px rgba(217, 43, 43, 0.6);
+}
+
 .p1 { grid-area: 1 / 1; }
 .p2 { grid-area: 1 / 2; }
 .p3 { grid-area: 1 / 3; }
@@ -544,6 +697,17 @@ body {
   border-radius: 40% 40% 30% 30%;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
+.die-cube.dice-souzu .die-face[data-value="1"] .pip.on { opacity: 0; }
+.die-cube.dice-souzu .die-face[data-value="1"]::before {
+  content: "🐦";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.3rem;
+  filter: drop-shadow(0 0 4px rgba(31, 107, 36, 0.4));
+}
 
 /* --- dice skin: 萬子 (manzu / characters) --- */
 .die-cube.dice-manzu .die-face {
@@ -561,7 +725,11 @@ body {
   color: #b3231c;
   font-family: "Hiragino Mincho ProN", serif;
 }
-.die-cube.dice-manzu .die-face[data-value="1"]::before { content: "一"; }
+.die-cube.dice-manzu .die-face[data-value="1"]::before {
+  content: "一";
+  color: #c9971f;
+  text-shadow: 0 0 8px rgba(201, 151, 31, 0.5);
+}
 .die-cube.dice-manzu .die-face[data-value="2"]::before { content: "二"; }
 .die-cube.dice-manzu .die-face[data-value="3"]::before { content: "三"; }
 .die-cube.dice-manzu .die-face[data-value="4"]::before { content: "四"; }
@@ -572,6 +740,10 @@ body {
 .die-cube.dice-pinzu .pip.on {
   background: radial-gradient(circle at 35% 35%, #eafcff, #1b7fae 55%, #0c4f6e);
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+.die-cube.dice-pinzu .die-face[data-value="1"] .pip.on {
+  background: radial-gradient(circle at 35% 35%, #fff6d9, #d4af37 55%, #8a6a1a);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6), 0 0 8px rgba(212, 175, 55, 0.6);
 }
 
 /* --- dice skin: ドラゴンボール風 --- */
@@ -587,6 +759,67 @@ body {
   transform: none;
   width: 100%;
   height: 100%;
+}
+.die-cube.dice-dragonball .die-face[data-value="1"] .pip.on {
+  background: linear-gradient(180deg, #fff3b0, #ffd700);
+  box-shadow: 0 0 10px 3px rgba(255, 215, 0, 0.7);
+}
+
+/* --- dice skin: 花札風 (hanafuda) --- */
+.die-cube.dice-hanafuda .die-face {
+  background: linear-gradient(160deg, #b3231c, #6e130e);
+  box-shadow: inset 0 0 0 3px #d4af37;
+}
+.die-cube.dice-hanafuda .pip.on {
+  background: radial-gradient(circle at 35% 35%, #fff3b0, #d4af37 60%, #8a6a1a);
+  box-shadow: 0 0 5px rgba(212, 175, 55, 0.7);
+}
+.die-cube.dice-hanafuda .die-face[data-value="1"] .pip.on {
+  background: radial-gradient(circle at 35% 35%, #ffffff, #ffe08a 60%, #d4af37);
+  box-shadow: 0 0 10px 3px rgba(255, 224, 138, 0.85);
+}
+
+/* --- dice skin: 招き猫・和柄 (maneki-neko gold) --- */
+.die-cube.dice-maneki .die-face {
+  background: linear-gradient(160deg, #ffe9a8, #d4af37 55%, #a9821f);
+}
+.die-cube.dice-maneki .pip.on {
+  background: #b3231c;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+.die-cube.dice-maneki .die-face[data-value="1"] .pip.on {
+  background: radial-gradient(circle at 35% 35%, #ffffff, #f4d35e 55%, #b3231c);
+  box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.7);
+}
+
+/* --- dice skin: 夏祭り・花火 (matsuri fireworks) --- */
+.die-cube.dice-matsuri .die-face {
+  background: radial-gradient(circle at 45% 35%, #3a4d9e, #1a2a5e 60%, #0d1638);
+}
+.die-cube.dice-matsuri .pip.on {
+  background: #ffffff;
+  box-shadow: 0 0 6px 2px rgba(255, 210, 120, 0.6), 0 0 3px rgba(255, 120, 200, 0.5);
+}
+.die-cube.dice-matsuri .die-face[data-value="1"] .pip.on {
+  background: #fff8e0;
+  box-shadow: 0 0 14px 5px rgba(255, 210, 120, 0.9), 0 0 6px 2px rgba(255, 120, 200, 0.7);
+}
+
+/* --- dice skin: レトロ8bit (retro) --- */
+.die-cube.dice-retro .die-face {
+  background: #0b0f0b;
+  box-shadow: inset 0 0 0 2px #39ff14;
+}
+.die-cube.dice-retro .pip {
+  border-radius: 15%;
+}
+.die-cube.dice-retro .pip.on {
+  background: #39ff14;
+  box-shadow: 0 0 6px #39ff14;
+}
+.die-cube.dice-retro .die-face[data-value="1"] .pip.on {
+  background: #ff2ee0;
+  box-shadow: 0 0 10px 3px #ff2ee0;
 }
 
 .message {
@@ -910,13 +1143,18 @@ body {
 }
 .cutin-pattern {
   height: 90px;
-  background-color: #f4e4b8;
+  background-color: #e8cf9c;
   background-image:
-    repeating-radial-gradient(ellipse at 20% 30%, #6b4a1f 0 8px, transparent 9px 20px),
-    repeating-radial-gradient(ellipse at 65% 65%, #6b4a1f 0 10px, transparent 11px 24px),
-    repeating-radial-gradient(ellipse at 80% 20%, #6b4a1f 0 6px, transparent 7px 16px),
-    repeating-radial-gradient(ellipse at 45% 75%, #6b4a1f 0 7px, transparent 8px 18px),
-    repeating-radial-gradient(ellipse at 92% 60%, #6b4a1f 0 9px, transparent 10px 22px);
+    radial-gradient(ellipse 22px 16px at 10% 25%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 30px 22px at 30% 65%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 18px 24px at 48% 20%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 26px 18px at 62% 55%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 20px 26px at 80% 15%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 32px 20px at 90% 60%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 16px 20px at 18% 85%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 24px 16px at 40% 95%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 22px 22px at 70% 90%, #4a2f0f 0 60%, transparent 61%),
+    radial-gradient(ellipse 18px 18px at 96% 92%, #4a2f0f 0 60%, transparent 61%);
 }
 .cutin-text {
   padding: 14px;
@@ -936,18 +1174,18 @@ body {
 }
 .mob-icon {
   position: absolute;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--heat-color);
+  width: 76px;
+  height: 76px;
+  border-radius: 20%;
+  background: linear-gradient(160deg, #ffffff, #e4e2f0);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
-  color: #1a1a2e;
+  font-size: 2.3rem;
+  color: #232342;
   opacity: 0;
   transform: scale(0.3);
-  box-shadow: 0 0 20px var(--heat-glow);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 0 18px var(--heat-glow);
 }
 .mob-icon.show {
   animation: mob-pop 0.9s ease forwards;
@@ -1140,14 +1378,19 @@ body {
 
 .preview-stage {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   padding: 20px 0;
   min-height: 120px;
 }
 .preview-stage .die {
+  position: relative;
+  left: auto;
+  top: auto;
   width: 110px;
-  aspect-ratio: 1;
+  height: 110px;
 }
 .preview-tray-box {
   width: 100%;

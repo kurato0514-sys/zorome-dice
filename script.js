@@ -21,16 +21,18 @@
   const TRAY_CLASS = [
     "", "tray-ocean", "tray-sunset", "tray-galaxy",
     "tray-hanafuda", "tray-maneki", "tray-matsuri", "tray-retro",
+    "tray-giraffe", "tray-zebra", "tray-ladybug", "tray-tiger", "tray-danger",
   ];
   const TRAY_SKIN_NAMES = [
     "ノーマル", "オーシャン", "サンセット", "ギャラクシー",
     "花札風", "招き猫・和柄", "夏祭り・花火", "レトロ8bit",
+    "キリン柄", "シマウマ柄", "テントウムシ柄", "トラ柄", "デンジャー柄",
   ];
-  const TRAY_STAGE_REQ = [0, 5, 10, 15, null, null, null, null];
+  const TRAY_STAGE_REQ = [0, 5, 10, 15, null, null, null, null, null, null, null, null, null];
 
   // sound skins: 1=default(free) 2=和風 3=エレクトロ (both 2,3 unlocked together via soundPack purchase)
-  const SOUND_SKIN_NAMES = ["ノーマル", "和風", "エレクトロ"];
-  const SOUND_SKIN_ICONS = ["🔈", "🎐", "⚡"];
+  const SOUND_SKIN_NAMES = ["ノーマル", "和風", "エレクトロ", "キュインA(レーザー)", "キュインB(パワーアップ)", "キュインC(RPG風)", "ガコッ(機械式)"];
+  const SOUND_SKIN_ICONS = ["🔈", "🎐", "⚡", "🔫", "💥", "✨", "⚙️"];
 
   const PIP_PATTERNS = {
     1: [5],
@@ -54,6 +56,9 @@
   const bestCountEl = document.getElementById("bestCount");
   const shopBtn = document.getElementById("shopBtn");
 
+  const openingScreen = document.getElementById("openingScreen");
+  const startBtn = document.getElementById("startBtn");
+  const topbarEl = document.getElementById("topbar");
   const selectScreen = document.getElementById("selectScreen");
   const playScreen = document.getElementById("playScreen");
   const progressFill = document.getElementById("progressFill");
@@ -81,6 +86,7 @@
   const probValueEl = document.getElementById("probValue");
   const stageTimeEl = document.getElementById("stageTime");
   const stageBestTimeEl = document.getElementById("stageBestTime");
+  const rollCountEl = document.getElementById("rollCount");
   const reachBadge = document.getElementById("reachBadge");
 
   const confettiLayer = document.getElementById("confetti");
@@ -159,6 +165,7 @@
       owned: {
         dice5: false, dice6: false, dice7: false, dice8: false, dice9: false,
         tray5: false, tray6: false, tray7: false, tray8: false,
+        tray9: false, tray10: false, tray11: false, tray12: false, tray13: false,
         soundPack: false, effectPack: false,
       },
     };
@@ -195,6 +202,7 @@
 
   let rolling = false;
   let stageStartTime = Date.now();
+  let stageRollCount = 0;
   let timerHandle = null;
   let selectedStage = null;
   let playValues = [];
@@ -454,15 +462,18 @@
     if (kind === "dice") {
       const savedSkin = state.diceSkin;
       state.diceSkin = skinId;
-      const die = buildDie(6, false);
+      const die = buildDie(6, false, 110);
       state.diceSkin = savedSkin;
-      die.style.setProperty("--die-half", "55px");
       previewStage.appendChild(die);
     } else if (kind === "tray") {
       const box = document.createElement("div");
       box.className = "preview-tray-box tray " + (TRAY_CLASS[skinId - 1] || "");
       previewStage.appendChild(box);
     } else {
+      const note = document.createElement("div");
+      note.className = "preview-note";
+      note.textContent = "🎉 ゾロ目が揃った瞬間に鳴る「確定音」です";
+      previewStage.appendChild(note);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "test-btn";
@@ -551,6 +562,8 @@
     selectScreen.hidden = true;
     playScreen.hidden = false;
     stageStartTime = Date.now();
+    stageRollCount = 0;
+    rollCountEl.textContent = "0";
     postWinPending = false;
     rollBtn.querySelector(".roll-btn-label").textContent = "振る";
     renderPlay();
@@ -657,35 +670,48 @@
     noise.start(now);
     noise.stop(now + duration);
 
-    // bright clink hits — the actual "カラン、コロン" character
+    // knock hits — a short filtered noise "tock" plus a brief inharmonic
+    // ring, more like ceramic/wood clacking than a musical electronic blip
     const clinkCount = Math.max(4, Math.floor(duration * 11));
     for (let i = 0; i < clinkCount; i++) {
-      const t = now + (Math.random() * 0.7 + i / clinkCount * 0.3) * duration;
-      const freq = 650 + Math.random() * 550;
+      const t = now + (Math.random() * 0.7 + (i / clinkCount) * 0.3) * duration;
+      const freq = 1500 + Math.random() * 900;
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.2, t + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + 0.13);
+      // the actual "knock" transient — filtered noise, very short
+      const knockBufSize = Math.floor(ctx.sampleRate * 0.03);
+      const knockBuf = ctx.createBuffer(1, knockBufSize, ctx.sampleRate);
+      const kd = knockBuf.getChannelData(0);
+      for (let s = 0; s < knockBufSize; s++) {
+        kd[s] = (Math.random() * 2 - 1) * Math.pow(1 - s / knockBufSize, 1.6);
+      }
+      const knock = ctx.createBufferSource();
+      knock.buffer = knockBuf;
+      const knockFilter = ctx.createBiquadFilter();
+      knockFilter.type = "bandpass";
+      knockFilter.frequency.value = freq;
+      knockFilter.Q.value = 1.4;
+      const knockGain = ctx.createGain();
+      knockGain.gain.setValueAtTime(0.5, t);
+      knockGain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+      knock.connect(knockFilter);
+      knockFilter.connect(knockGain);
+      knockGain.connect(ctx.destination);
+      knock.start(t);
 
-      const shimmer = ctx.createOscillator();
-      const shimmerGain = ctx.createGain();
-      shimmer.type = "sine";
-      shimmer.frequency.value = freq * 2;
-      shimmerGain.gain.setValueAtTime(0, t);
-      shimmerGain.gain.linearRampToValueAtTime(0.08, t + 0.004);
-      shimmerGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-      shimmer.connect(shimmerGain);
-      shimmerGain.connect(ctx.destination);
-      shimmer.start(t);
-      shimmer.stop(t + 0.09);
+      // a faint inharmonic ring, detuned so it doesn't read as a clean tone
+      [1, 1.83].forEach((mult) => {
+        const ring = ctx.createOscillator();
+        const ringGain = ctx.createGain();
+        ring.type = "sine";
+        ring.frequency.value = freq * mult;
+        ringGain.gain.setValueAtTime(0, t);
+        ringGain.gain.linearRampToValueAtTime(0.05, t + 0.003);
+        ringGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        ring.connect(ringGain);
+        ringGain.connect(ctx.destination);
+        ring.start(t);
+        ring.stop(t + 0.06);
+      });
     }
   }
 
@@ -760,6 +786,11 @@
       });
       return;
     }
+
+    if (skin === 4) return playKyuinA();
+    if (skin === 5) return playKyuinB();
+    if (skin === 6) return playKyuinC();
+    if (skin === 7) return playGako();
 
     // ノーマル: bright ascending fanfare
     const notes = [880, 1108.7, 1318.5, 1760];
@@ -1008,6 +1039,56 @@
     });
   }
 
+  function playGako() {
+    // 「ガコッ」— a single heavy mechanical latch/lever thunk, not musical
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const now = ctx.currentTime;
+
+    const bufSize = Math.floor(ctx.sampleRate * 0.05);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 1.2);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const nf = ctx.createBiquadFilter();
+    nf.type = "lowpass";
+    nf.frequency.value = 1200;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.6, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    noise.connect(nf);
+    nf.connect(ng);
+    ng.connect(ctx.destination);
+    noise.start(now);
+
+    const thunk = ctx.createOscillator();
+    const tg = ctx.createGain();
+    thunk.type = "square";
+    thunk.frequency.setValueAtTime(140, now);
+    thunk.frequency.exponentialRampToValueAtTime(55, now + 0.09);
+    tg.gain.setValueAtTime(0.7, now);
+    tg.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    thunk.connect(tg);
+    tg.connect(ctx.destination);
+    thunk.start(now);
+    thunk.stop(now + 0.16);
+
+    // a second smaller clack shortly after, like a latch catching
+    const t2 = now + 0.11;
+    const clack = ctx.createOscillator();
+    const cg = ctx.createGain();
+    clack.type = "square";
+    clack.frequency.value = 300;
+    cg.gain.setValueAtTime(0.3, t2);
+    cg.gain.exponentialRampToValueAtTime(0.001, t2 + 0.05);
+    clack.connect(cg);
+    cg.connect(ctx.destination);
+    clack.start(t2);
+    clack.stop(t2 + 0.06);
+  }
+
   function playMetalClank() {
     const ctx = getAudioCtx();
     if (!ctx) return;
@@ -1097,11 +1178,11 @@
       const el = document.createElement("div");
       el.className = "mob-icon";
       el.textContent = faces[Math.floor(Math.random() * faces.length)];
-      const scale = 0.5 + Math.random() * 0.9;
-      el.style.left = Math.random() * 96 + "%";
-      el.style.top = Math.random() * 94 + "%";
-      el.style.fontSize = (1.1 * scale).toFixed(2) + "rem";
-      el.style.width = el.style.height = Math.round(52 * scale) + "px";
+      const scale = 0.55 + Math.random() * 0.9;
+      el.style.left = Math.random() * 94 + "%";
+      el.style.top = Math.random() * 92 + "%";
+      el.style.fontSize = (2.3 * scale).toFixed(2) + "rem";
+      el.style.width = el.style.height = Math.round(76 * scale) + "px";
       el.style.animationDelay = Math.random() * 0.5 + "s";
       mobPreview.appendChild(el);
     }
@@ -1190,7 +1271,12 @@
     { id: "tray6", price: "¥300", name: "お皿: 招き猫・和柄", desc: "金と紅の縁起物デザイン" },
     { id: "tray7", price: "¥300", name: "お皿: 夏祭り・花火", desc: "藍色の浴衣柄デザイン" },
     { id: "tray8", price: "¥300", name: "お皿: レトロ8bit", desc: "スキャンライン背景デザイン" },
-    { id: "soundPack", price: "¥300", name: "プレミアムサウンド", desc: "「和風」「エレクトロ」の確定音を選べるようになります" },
+    { id: "tray9", price: "¥300", name: "お皿: キリン柄", desc: "アース系のキリン模様デザイン" },
+    { id: "tray10", price: "¥300", name: "お皿: シマウマ柄", desc: "白黒ストライプのシマウマ模様デザイン" },
+    { id: "tray11", price: "¥300", name: "お皿: テントウムシ柄", desc: "赤×黒の水玉デザイン" },
+    { id: "tray12", price: "¥300", name: "お皿: トラ柄", desc: "オレンジ×黒のトラ縞デザイン" },
+    { id: "tray13", price: "¥300", name: "お皿: デンジャー柄", desc: "黄×黒の警戒ストライプデザイン" },
+    { id: "soundPack", price: "¥300", name: "プレミアムサウンド", desc: "ゾロ目が揃った時に鳴る「確定音」を6種類（和風・エレクトロ・キュインA/B/C・ガコッ）から選べるようになります" },
     { id: "effectPack", price: "¥300", name: "プレミアム演出", desc: "節目のステージで「激アツ演出」（金シャッター・キセル風・カットイン・群予告・金の雨）が出るようになります" },
   ];
 
@@ -1348,9 +1434,10 @@
       ["確定音:ノーマル", () => playKakuteiChime(1)],
       ["確定音:和風", () => playKakuteiChime(2)],
       ["確定音:エレクトロ", () => playKakuteiChime(3)],
-      ["確定音候補:キュインA(レーザー)", () => playKyuinA()],
-      ["確定音候補:キュインB(パワーアップ)", () => playKyuinB()],
-      ["確定音候補:キュインC(RPG風)", () => playKyuinC()],
+      ["確定音:キュインA(レーザー)", () => playKyuinA()],
+      ["確定音:キュインB(パワーアップ)", () => playKyuinB()],
+      ["確定音:キュインC(RPG風)", () => playKyuinC()],
+      ["確定音:ガコッ(機械式)", () => playGako()],
       ["転がる音", () => playDiceRollSound(650)],
       ["リーチ音", () => playReachTick(3)],
       ["先バレ音:現行", () => playSakibareSound()],
@@ -1487,6 +1574,9 @@
     rolling = true;
     rollBtn.disabled = true;
 
+    stageRollCount += 1;
+    rollCountEl.textContent = String(stageRollCount);
+
     const playCount = selectedStage;
     const isFrontier = playCount === state.count;
     const dice = Array.from(board.children);
@@ -1621,6 +1711,13 @@
     if (rolling) return;
     if (postWinPending) leavePlayAfterWin();
     else backToSelect();
+  });
+
+  startBtn.addEventListener("click", () => {
+    getAudioCtx(); // warm up audio on this first real user gesture
+    openingScreen.hidden = true;
+    topbarEl.hidden = false;
+    selectScreen.hidden = false;
   });
 
   renderSelect();
