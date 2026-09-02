@@ -1,4 +1,4 @@
-const CACHE_NAME = "zorome-dice-v2";
+const CACHE_NAME = "zorome-dice-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -28,9 +28,11 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   // network-first: always prefer the latest files while online so app
-  // updates show up immediately; fall back to cache only when offline
+  // updates show up immediately; fall back to cache only when offline.
+  // cache: "no-store" bypasses the HTTP cache too — otherwise the browser
+  // can quietly hand back a stale response even on this "network" fetch
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: "no-store" })
       .then((response) => {
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
