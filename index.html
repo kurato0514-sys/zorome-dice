@@ -54,6 +54,7 @@
           <span class="skin-row-label">サウンド</span>
           <div class="skin-swatches" id="soundSwatches"></div>
         </div>
+        <button id="skinsStoreBtn" class="skins-store-btn" type="button">🛍️ スキン・サウンドをストアで購入する</button>
       </div>
     </section>
 
@@ -72,10 +73,6 @@
         <div class="stat">
           <span class="stat-label">この面 <span id="stageBestTime"></span></span>
           <span class="stat-value" id="stageTime">0.0s</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">合計</span>
-          <span class="stat-value" id="totalTime">0.0s</span>
         </div>
       </div>
 
@@ -109,7 +106,13 @@
   </div>
 
   <div class="kiseru-effect" id="kiseruEffect">
-    <div class="kiseru-ember"></div>
+    <div class="kiseru-rig">
+      <div class="kiseru-stem"></div>
+      <div class="kiseru-mouthpiece"></div>
+      <div class="kiseru-bowl"></div>
+      <div class="kiseru-ember"></div>
+      <div id="kiseruSmokeLayer"></div>
+    </div>
   </div>
 
   <div class="cutin-card" id="cutinCard">
@@ -146,6 +149,17 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="store-overlay" id="previewOverlay">
+    <div class="store-card">
+      <div class="store-header">
+        <span id="previewTitle">プレビュー</span>
+        <button id="previewCloseBtn" class="store-close-btn" type="button">✕</button>
+      </div>
+      <div class="preview-stage" id="previewStage"></div>
+      <div class="preview-actions" id="previewActions"></div>
+    </div>
+  </div>
 
   <div class="store-overlay" id="testOverlay">
     <div class="store-card">

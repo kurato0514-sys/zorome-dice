@@ -1,4 +1,4 @@
-const CACHE_NAME = "zorome-dice-v1";
+const CACHE_NAME = "zorome-dice-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -27,16 +27,15 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  // network-first: always prefer the latest files while online so app
+  // updates show up immediately; fall back to cache only when offline
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => cached);
-    })
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

@@ -5,7 +5,7 @@
   const START_DICE = 2;
   const STORAGE_KEY = "zorome-dice-state-v3";
 
-  // dice skins: 1=default(free) 2=souzu@5 3=manzu@10 4=pinzu@15, rest are store-exclusive (diceSkinPack)
+  // dice skins: 1=default(free) 2=souzu@5 3=manzu@10 4=pinzu@15, rest sold individually in the store
   const DICE_CLASS = [
     "", "dice-souzu", "dice-manzu", "dice-pinzu", "dice-dragonball",
     "dice-hanafuda", "dice-maneki", "dice-matsuri", "dice-retro",
@@ -17,7 +17,7 @@
   // 0 = free, a number = unlocked at that stage, null = store-exclusive only
   const DICE_STAGE_REQ = [0, 5, 10, 15, null, null, null, null, null];
 
-  // tray skins: 1=default 2=ocean@5 3=sunset@10 4=galaxy@15, rest are store-exclusive (traySkinPack)
+  // tray skins: 1=default 2=ocean@5 3=sunset@10 4=galaxy@15, rest sold individually in the store
   const TRAY_CLASS = [
     "", "tray-ocean", "tray-sunset", "tray-galaxy",
     "tray-hanafuda", "tray-maneki", "tray-matsuri", "tray-retro",
@@ -64,6 +64,12 @@
   const diceSwatchesEl = document.getElementById("diceSwatches");
   const traySwatchesEl = document.getElementById("traySwatches");
   const soundSwatchesEl = document.getElementById("soundSwatches");
+  const skinsStoreBtn = document.getElementById("skinsStoreBtn");
+  const previewOverlay = document.getElementById("previewOverlay");
+  const previewTitle = document.getElementById("previewTitle");
+  const previewStage = document.getElementById("previewStage");
+  const previewActions = document.getElementById("previewActions");
+  const previewCloseBtn = document.getElementById("previewCloseBtn");
 
   const backBtn = document.getElementById("backBtn");
   const backBtn2 = document.getElementById("backBtn2");
@@ -75,7 +81,6 @@
   const probValueEl = document.getElementById("probValue");
   const stageTimeEl = document.getElementById("stageTime");
   const stageBestTimeEl = document.getElementById("stageBestTime");
-  const totalTimeEl = document.getElementById("totalTime");
   const reachBadge = document.getElementById("reachBadge");
 
   const confettiLayer = document.getElementById("confetti");
@@ -84,6 +89,7 @@
   const sakibareBadge = document.getElementById("sakibareBadge");
   const shutter = document.getElementById("shutter");
   const kiseruEffect = document.getElementById("kiseruEffect");
+  const kiseruSmokeLayer = document.getElementById("kiseruSmokeLayer");
   const cutinCard = document.getElementById("cutinCard");
   const mobPreview = document.getElementById("mobPreview");
   const blackout = document.getElementById("blackout");
@@ -150,9 +156,11 @@
       soundSkin: 1,
       shakeEnabled: false,
       noAds: false,
-      owned: { diceSkinPack: false, traySkinPack: false, soundPack: false, effectPack: false },
-      totalStartTime: Date.now(),
-      totalElapsedMs: 0,
+      owned: {
+        dice5: false, dice6: false, dice7: false, dice8: false, dice9: false,
+        tray5: false, tray6: false, tray7: false, tray8: false,
+        soundPack: false, effectPack: false,
+      },
     };
   }
 
@@ -264,17 +272,17 @@
   }
   window.addEventListener("resize", updateDieSize);
 
-  // ---- skin unlock levels ----
+  // ---- skin unlock levels (each store-exclusive skin is sold separately) ----
   function isDiceSkinUnlocked(id) {
-    if (state.owned.diceSkinPack) return true;
     const req = DICE_STAGE_REQ[id - 1];
-    return req !== null && state.best >= req;
+    if (req !== null) return state.best >= req;
+    return !!state.owned["dice" + id];
   }
 
   function isTraySkinUnlocked(id) {
-    if (state.owned.traySkinPack) return true;
     const req = TRAY_STAGE_REQ[id - 1];
-    return req !== null && state.best >= req;
+    if (req !== null) return state.best >= req;
+    return !!state.owned["tray" + id];
   }
 
   function isSoundUnlocked(id) {
@@ -310,22 +318,70 @@
     el.dataset.skin = skinId;
     el.title = name || "";
     if (icon && unlocked) el.textContent = icon;
-    if (!unlocked) {
-      el.innerHTML = '<span class="swatch-lock">🔒</span>';
-      el.addEventListener("click", () => {
-        showToast(stageReq === "store" || !stageReq ? "ストアの購入で解放されます" : `ステージ${stageReq}到達で解放されます`);
-      });
+    if (!unlocked) el.innerHTML = '<span class="swatch-lock">🔒</span>';
+    el.addEventListener("click", () => openSkinPreview(kind, skinId, unlocked, name, stageReq));
+    return el;
+  }
+
+  function openSkinPreview(kind, skinId, unlocked, name, stageReq) {
+    previewTitle.textContent = name || "";
+    previewStage.innerHTML = "";
+
+    if (kind === "dice") {
+      const savedSkin = state.diceSkin;
+      state.diceSkin = skinId;
+      const die = buildDie(6, false);
+      state.diceSkin = savedSkin;
+      die.style.setProperty("--die-half", "55px");
+      previewStage.appendChild(die);
+    } else if (kind === "tray") {
+      const box = document.createElement("div");
+      box.className = "preview-tray-box tray " + (TRAY_CLASS[skinId - 1] || "");
+      previewStage.appendChild(box);
     } else {
-      el.addEventListener("click", () => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "test-btn";
+      btn.textContent = "▶ このサウンドを再生";
+      btn.addEventListener("click", () => playKakuteiChime(skinId));
+      previewStage.appendChild(btn);
+    }
+
+    previewActions.innerHTML = "";
+    if (unlocked) {
+      const useBtn = document.createElement("button");
+      useBtn.type = "button";
+      useBtn.className = "store-buy-btn";
+      useBtn.textContent = "これを使う";
+      useBtn.addEventListener("click", () => {
         if (kind === "dice") state.diceSkin = skinId;
         else if (kind === "tray") state.traySkin = skinId;
         else state.soundSkin = skinId;
         saveState();
         renderSkinPanel();
         if (!playScreen.hidden) renderPlay();
+        previewOverlay.classList.remove("show");
       });
+      previewActions.appendChild(useBtn);
+    } else {
+      const isStoreOnly = stageReq === "store" || !stageReq;
+      const lockBtn = document.createElement("button");
+      lockBtn.type = "button";
+      lockBtn.className = "store-buy-btn" + (isStoreOnly ? "" : " owned");
+      lockBtn.textContent = isStoreOnly ? "ストアで購入する" : `ステージ${stageReq}到達で解放`;
+      if (isStoreOnly) {
+        lockBtn.addEventListener("click", () => {
+          previewOverlay.classList.remove("show");
+          renderStore();
+          storeOverlay.classList.add("show");
+        });
+      } else {
+        lockBtn.disabled = true;
+      }
+      previewActions.appendChild(lockBtn);
     }
-    return el;
+
+    previewOverlay.classList.add("show");
   }
 
   // ---- select screen ----
@@ -438,12 +494,15 @@
   }
 
   function playDiceRollSound(durationMs) {
+    // "カランコロン" — bright, light clinks (like small hard dice or bells
+    // knocking together), not a dull rumble
     const ctx = getAudioCtx();
     if (!ctx) return;
     if (ctx.state === "suspended") ctx.resume();
     const duration = durationMs / 1000;
     const now = ctx.currentTime;
 
+    // a very soft noise bed underneath, just for texture
     const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * duration));
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -452,39 +511,49 @@
     }
     const noise = ctx.createBufferSource();
     noise.buffer = buffer;
-
     const bandpass = ctx.createBiquadFilter();
     bandpass.type = "bandpass";
-    bandpass.frequency.setValueAtTime(1200, now);
-    bandpass.frequency.linearRampToValueAtTime(500, now + duration);
-    bandpass.Q.value = 0.8;
-
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.16, now + 0.05);
-    gain.gain.linearRampToValueAtTime(0.05, now + duration * 0.7);
-    gain.gain.linearRampToValueAtTime(0, now + duration);
-
+    bandpass.frequency.value = 2000;
+    bandpass.Q.value = 0.6;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0, now);
+    noiseGain.gain.linearRampToValueAtTime(0.035, now + 0.05);
+    noiseGain.gain.linearRampToValueAtTime(0, now + duration);
     noise.connect(bandpass);
-    bandpass.connect(gain);
-    gain.connect(ctx.destination);
+    bandpass.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
     noise.start(now);
     noise.stop(now + duration);
 
-    const tockCount = Math.max(2, Math.floor(duration * 6));
-    for (let i = 0; i < tockCount; i++) {
-      const t = now + Math.random() * duration;
+    // bright clink hits — the actual "カラン、コロン" character
+    const clinkCount = Math.max(4, Math.floor(duration * 11));
+    for (let i = 0; i < clinkCount; i++) {
+      const t = now + (Math.random() * 0.7 + i / clinkCount * 0.3) * duration;
+      const freq = 650 + Math.random() * 550;
+
       const osc = ctx.createOscillator();
-      const og = ctx.createGain();
+      const gain = ctx.createGain();
       osc.type = "triangle";
-      osc.frequency.value = 200 + Math.random() * 250;
-      og.gain.setValueAtTime(0, t);
-      og.gain.linearRampToValueAtTime(0.22, t + 0.005);
-      og.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-      osc.connect(og);
-      og.connect(ctx.destination);
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.2, t + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
       osc.start(t);
-      osc.stop(t + 0.07);
+      osc.stop(t + 0.13);
+
+      const shimmer = ctx.createOscillator();
+      const shimmerGain = ctx.createGain();
+      shimmer.type = "sine";
+      shimmer.frequency.value = freq * 2;
+      shimmerGain.gain.setValueAtTime(0, t);
+      shimmerGain.gain.linearRampToValueAtTime(0.08, t + 0.004);
+      shimmerGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      shimmer.connect(shimmerGain);
+      shimmerGain.connect(ctx.destination);
+      shimmer.start(t);
+      shimmer.stop(t + 0.09);
     }
   }
 
@@ -646,11 +715,210 @@
     ping.stop(t2 + 0.35);
   }
 
+  // ---- sound candidates (for the test panel — not wired into real gameplay
+  // until one is picked) ----
+  function playDokyunB() {
+    // パンチの効いたスネア風インパクト＋余韻のライザー
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const now = ctx.currentTime;
+
+    const bufferSize = Math.floor(ctx.sampleRate * 0.15);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 900;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.9, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    noise.connect(hp);
+    hp.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(now);
+
+    const body = ctx.createOscillator();
+    const bodyGain = ctx.createGain();
+    body.type = "triangle";
+    body.frequency.setValueAtTime(200, now);
+    body.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+    bodyGain.gain.setValueAtTime(0.6, now);
+    bodyGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    body.connect(bodyGain);
+    bodyGain.connect(ctx.destination);
+    body.start(now);
+    body.stop(now + 0.2);
+
+    const t2 = now + 0.08;
+    const riser = ctx.createOscillator();
+    const riserGain = ctx.createGain();
+    riser.type = "sawtooth";
+    riser.frequency.setValueAtTime(250, t2);
+    riser.frequency.exponentialRampToValueAtTime(1100, t2 + 0.45);
+    riserGain.gain.setValueAtTime(0.001, t2);
+    riserGain.gain.exponentialRampToValueAtTime(0.18, t2 + 0.1);
+    riserGain.gain.exponentialRampToValueAtTime(0.001, t2 + 0.5);
+    riser.connect(riserGain);
+    riserGain.connect(ctx.destination);
+    riser.start(t2);
+    riser.stop(t2 + 0.55);
+  }
+
+  function playDokyunC() {
+    // 爆発風：低音ランブル＋ノイズバースト
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const now = ctx.currentTime;
+
+    const bufferSize = Math.floor(ctx.sampleRate * 0.6);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 0.6);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(2500, now);
+    lp.frequency.exponentialRampToValueAtTime(300, now + 0.6);
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.7, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    noise.connect(lp);
+    lp.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(now);
+
+    const rumble = ctx.createOscillator();
+    const rumbleGain = ctx.createGain();
+    rumble.type = "sine";
+    rumble.frequency.setValueAtTime(90, now);
+    rumble.frequency.exponentialRampToValueAtTime(35, now + 0.5);
+    rumbleGain.gain.setValueAtTime(0.8, now);
+    rumbleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    rumble.connect(rumbleGain);
+    rumbleGain.connect(ctx.destination);
+    rumble.start(now);
+    rumble.stop(now + 0.6);
+  }
+
+  function playKyuinA() {
+    // シャープなレーザー風「キュイン、キュイン」
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const now = ctx.currentTime;
+    [0, 0.22].forEach((offset) => {
+      const t0 = now + offset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(300, t0);
+      osc.frequency.exponentialRampToValueAtTime(1900, t0 + 0.15);
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.32, t0 + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.25);
+    });
+  }
+
+  function playKyuinB() {
+    // シンセの「パワーアップ」二段ヒット
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const now = ctx.currentTime;
+    [0, 0.2].forEach((offset, idx) => {
+      const t0 = now + offset;
+      [1, 1.005].forEach((detune) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx === 0 ? "sine" : "square";
+        osc.frequency.setValueAtTime((260 + idx * 140) * detune, t0);
+        osc.frequency.exponentialRampToValueAtTime((900 + idx * 300) * detune, t0 + 0.16);
+        gain.gain.setValueAtTime(0.001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.28);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.3);
+      });
+    });
+  }
+
+  function playKyuinC() {
+    // 王道RPG風の輝かしいアルペジオ
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const now = ctx.currentTime;
+    [988, 1245, 1568, 1976].forEach((freq, i) => {
+      const t0 = now + i * 0.07;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.28, t0 + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.45);
+    });
+  }
+
+  function playMetalClank() {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const now = ctx.currentTime;
+
+    // metallic clang: a few slightly detuned square tones with fast decay
+    [520, 780, 1040].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = freq + i * 6;
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    });
+
+    // impact thunk under the clang
+    const thunk = ctx.createOscillator();
+    const thunkGain = ctx.createGain();
+    thunk.type = "sine";
+    thunk.frequency.setValueAtTime(120, now);
+    thunk.frequency.exponentialRampToValueAtTime(50, now + 0.15);
+    thunkGain.gain.setValueAtTime(0.5, now);
+    thunkGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    thunk.connect(thunkGain);
+    thunkGain.connect(ctx.destination);
+    thunk.start(now);
+    thunk.stop(now + 0.22);
+  }
+
   async function playShutter() {
     shutter.classList.remove("show");
     void shutter.offsetWidth;
     shutter.classList.add("show");
-    await sleep(950);
+    await sleep(330); // lines up with the slam+overshoot in the CSS animation
+    playMetalClank();
+    vibrate([50]);
+    await sleep(620);
     shutter.classList.remove("show");
   }
 
@@ -659,12 +927,26 @@
     sakibareBadge.classList.remove("show");
     void sakibareBadge.offsetWidth;
     sakibareBadge.classList.add("show");
+
+    kiseruSmokeLayer.innerHTML = "";
+    for (let i = 0; i < 6; i++) {
+      const puff = document.createElement("div");
+      puff.className = "kiseru-smoke";
+      puff.style.setProperty("--sx", Math.round(-30 - Math.random() * 60) + "px");
+      puff.style.animationDelay = i * 0.22 + Math.random() * 0.1 + "s";
+      kiseruSmokeLayer.appendChild(puff);
+    }
+
     kiseruEffect.classList.remove("show");
     void kiseruEffect.offsetWidth;
     kiseruEffect.classList.add("show");
-    await sleep(1050);
+    requestAnimationFrame(() => {
+      kiseruSmokeLayer.querySelectorAll(".kiseru-smoke").forEach((el) => el.classList.add("show"));
+    });
+    await sleep(1700);
     kiseruEffect.classList.remove("show");
     sakibareBadge.classList.remove("show");
+    kiseruSmokeLayer.innerHTML = "";
   }
 
   async function playCutin() {
@@ -677,15 +959,15 @@
 
   async function playMobPreview() {
     mobPreview.innerHTML = "";
-    const iconCount = 6 + Math.floor(Math.random() * 3);
+    const iconCount = 14 + Math.floor(Math.random() * 6);
     const faces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
     for (let i = 0; i < iconCount; i++) {
       const el = document.createElement("div");
       el.className = "mob-icon";
       el.textContent = faces[Math.floor(Math.random() * faces.length)];
-      el.style.left = 5 + Math.random() * 80 + "%";
-      el.style.top = 5 + Math.random() * 70 + "%";
-      el.style.animationDelay = Math.random() * 0.25 + "s";
+      el.style.left = Math.random() * 92 + "%";
+      el.style.top = Math.random() * 90 + "%";
+      el.style.animationDelay = Math.random() * 0.35 + "s";
       mobPreview.appendChild(el);
     }
     sakibareBadge.textContent = "群予告！";
@@ -764,8 +1046,15 @@
   // ---- ads & store (mock — no real payment/ad network wired up) ----
   const STORE_ITEMS = [
     { id: "noAds", price: "¥300", name: "広告を非表示にする", desc: "ゾロ目が揃うたびに出る広告を消します" },
-    { id: "diceSkinPack", price: "¥300", name: "サイコロ 全種解放", desc: "ステージ到達を待たずに全デザイン（ドラゴンボール風含む）を使えます" },
-    { id: "traySkinPack", price: "¥300", name: "お皿 全種解放", desc: "ステージ到達を待たずに全デザインを使えます" },
+    { id: "dice5", price: "¥300", name: "サイコロ: ドラゴンボール風", desc: "星の数で目を表す限定デザイン" },
+    { id: "dice6", price: "¥300", name: "サイコロ: 花札風", desc: "紅×金の花札柄デザイン" },
+    { id: "dice7", price: "¥300", name: "サイコロ: 招き猫・和柄", desc: "金の招き猫デザイン" },
+    { id: "dice8", price: "¥300", name: "サイコロ: 夏祭り・花火", desc: "藍色に花火が咲くデザイン" },
+    { id: "dice9", price: "¥300", name: "サイコロ: レトロ8bit", desc: "蛍光グリーンのドット絵デザイン" },
+    { id: "tray5", price: "¥300", name: "お皿: 花札風", desc: "紅のフェルト台デザイン" },
+    { id: "tray6", price: "¥300", name: "お皿: 招き猫・和柄", desc: "金と紅の縁起物デザイン" },
+    { id: "tray7", price: "¥300", name: "お皿: 夏祭り・花火", desc: "藍色の浴衣柄デザイン" },
+    { id: "tray8", price: "¥300", name: "お皿: レトロ8bit", desc: "スキャンライン背景デザイン" },
     { id: "soundPack", price: "¥300", name: "プレミアムサウンド", desc: "「和風」「エレクトロ」の確定音を選べるようになります" },
     { id: "effectPack", price: "¥300", name: "プレミアム演出", desc: "節目のステージで「激アツ演出」（金シャッター・キセル風・カットイン・群予告・金の雨）が出るようになります" },
   ];
@@ -812,7 +1101,15 @@
     renderStore();
     storeOverlay.classList.add("show");
   });
+  skinsStoreBtn.addEventListener("click", () => {
+    renderStore();
+    storeOverlay.classList.add("show");
+  });
   storeCloseBtn.addEventListener("click", () => storeOverlay.classList.remove("show"));
+  previewCloseBtn.addEventListener("click", () => previewOverlay.classList.remove("show"));
+  previewOverlay.addEventListener("click", (e) => {
+    if (e.target === previewOverlay) previewOverlay.classList.remove("show");
+  });
   storeOverlay.addEventListener("click", (e) => {
     if (e.target === storeOverlay) storeOverlay.classList.remove("show");
   });
@@ -916,9 +1213,15 @@
       ["確定音:ノーマル", () => playKakuteiChime(1)],
       ["確定音:和風", () => playKakuteiChime(2)],
       ["確定音:エレクトロ", () => playKakuteiChime(3)],
+      ["確定音候補:キュインA(レーザー)", () => playKyuinA()],
+      ["確定音候補:キュインB(パワーアップ)", () => playKyuinB()],
+      ["確定音候補:キュインC(RPG風)", () => playKyuinC()],
       ["転がる音", () => playDiceRollSound(650)],
       ["リーチ音", () => playReachTick(3)],
-      ["先バレ音", () => playSakibareSound()],
+      ["先バレ音:現行", () => playSakibareSound()],
+      ["先バレ候補:ドキュンB(パンチ)", () => playDokyunB()],
+      ["先バレ候補:ドキュンC(爆発)", () => playDokyunC()],
+      ["シャッター金属音", () => playMetalClank()],
     ].forEach(([label, fn]) => {
       testSoundBtnsEl.appendChild(makeTestBtn(label, () => fn()));
     });
@@ -1025,7 +1328,6 @@
 
   function updateTimers() {
     stageTimeEl.textContent = formatTime(Date.now() - stageStartTime);
-    totalTimeEl.textContent = formatTime(state.totalElapsedMs + (Date.now() - state.totalStartTime));
   }
 
   function startTimerLoop() {
@@ -1063,7 +1365,8 @@
     if (showBigChance) await playSakibare();
 
     dice.forEach((d) => {
-      d.style.setProperty("--toss-x", Math.round(Math.random() * 16 - 8) + "px");
+      d.style.setProperty("--toss-x", Math.round(Math.random() * 26 - 13) + "px");
+      d.style.animationDelay = -(Math.random() * 0.5).toFixed(2) + "s"; // desync so dice look like they're jostling each other, not moving in lockstep
       d.classList.add("rolling");
     });
     setMessage(showBigChance ? "予感がする…！" : "振っています…");
@@ -1077,21 +1380,25 @@
       if (i > 0) matchingSoFar = matchingSoFar && finalValues[i] === finalValues[0];
 
       const remaining = dice.slice(i + 1);
-      const isLast = i === dice.length - 1;
 
-      // only build "reach" suspense once at least two dice have already
-      // matched each other — a single revealed die is not a reach yet
-      if (i > 0 && matchingSoFar && !isLast && remaining.length > 0) {
+      // "reach" only means something with exactly one die left to reveal —
+      // everything else already matches, and this last one decides it all
+      if (matchingSoFar && remaining.length === 1) {
         remaining.forEach((d) => {
-          d.style.setProperty("--toss-x", Math.round(Math.random() * 16 - 8) + "px");
+          d.style.setProperty("--toss-x", Math.round(Math.random() * 26 - 13) + "px");
+          d.style.animationDelay = -(Math.random() * 0.5).toFixed(2) + "s";
           d.classList.add("reach");
         });
         tray.classList.add("reach");
         reachBadge.classList.add("show");
         setMessage("リーチ！！", "win");
-        playReachTick(i);
-        playDiceRollSound(400);
-        await sleep(650);
+        playDiceRollSound(1800);
+        // drag out the suspense on the very last die with a few ticks
+        // instead of resolving it right away
+        for (let t = 0; t < 4; t++) {
+          playReachTick(i + t);
+          await sleep(450);
+        }
       } else {
         await sleep(180);
       }
@@ -1188,12 +1495,6 @@
     if (rolling) return;
     if (postWinPending) leavePlayAfterWin();
     else backToSelect();
-  });
-
-  window.addEventListener("beforeunload", () => {
-    state.totalElapsedMs += Date.now() - state.totalStartTime;
-    state.totalStartTime = Date.now();
-    saveState();
   });
 
   renderSelect();
