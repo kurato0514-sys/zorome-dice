@@ -1030,7 +1030,7 @@
     osc.frequency.setValueAtTime(120, now);
     osc.frequency.exponentialRampToValueAtTime(720, now + 0.5);
     gain.gain.setValueAtTime(0.001, now);
-    gain.gain.exponentialRampToValueAtTime(0.25, now + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.44, now + 0.15);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
     osc.connect(gain);
     gain.connect(ctx.destination);
@@ -1043,11 +1043,11 @@
     ping.type = "triangle";
     ping.frequency.value = 1200;
     pingGain.gain.setValueAtTime(0, t2);
-    pingGain.gain.linearRampToValueAtTime(0.3, t2 + 0.02);
+    pingGain.gain.linearRampToValueAtTime(0.5, t2 + 0.02);
     pingGain.gain.exponentialRampToValueAtTime(0.001, t2 + 0.3);
     ping.connect(pingGain);
     pingGain.connect(ctx.destination);
-    sendToEcho(ctx, pingGain, { delayTime: 0.1, feedback: 0.3, wet: 0.3 });
+    sendToEcho(ctx, pingGain, { delayTime: 0.1, feedback: 0.35, wet: 0.4 });
     ping.start(t2);
     ping.stop(t2 + 0.35);
   }
