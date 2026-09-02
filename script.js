@@ -1904,12 +1904,16 @@
     if (rolling) return;
     rolling = true;
     rollBtn.disabled = true;
-    postWinPending = false;
+    // keep postWinPending true (and the stage timer frozen) until we're
+    // actually done — playScreen stays visible through the whole ad wait,
+    // so clearing it early made updateTimers() start ticking again behind
+    // the ad overlay
     hideClearCelebration();
     if (!state.noAds) {
       await sleep(200);
       await showAdOverlay();
     }
+    postWinPending = false;
     rolling = false;
     rollBtn.disabled = false;
     backToSelect();
