@@ -1792,7 +1792,9 @@
       matched = allMatch(finalValues);
     }
     const bigChance = isFrontier && isBigChance(playCount, matched);
-    const showBigChance = bigChance && state.owned.effectPack; // 激熱演出はプレミアム限定
+    // プレミアム演出を購入していれば、節目ステージ限定ではなく全ステージの
+    // 勝利で先バレ・激熱演出が発生する
+    const showBigChance = matched && state.owned.effectPack;
     // the alien "kakutei" peek is rare and — like a real premonition cue —
     // flashes just before the last die locks in, not after the win is shown
     const willPeekAlien = matched && (bigChance || Math.random() < 0.12);
