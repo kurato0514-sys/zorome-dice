@@ -57,6 +57,7 @@
   const shopBtn = document.getElementById("shopBtn");
 
   const openingScreen = document.getElementById("openingScreen");
+  const brainJuiceLayer = document.getElementById("brainJuiceLayer");
   const startBtn = document.getElementById("startBtn");
   const topbarEl = document.getElementById("topbar");
   const selectScreen = document.getElementById("selectScreen");
@@ -70,6 +71,14 @@
   const traySwatchesEl = document.getElementById("traySwatches");
   const soundSwatchesEl = document.getElementById("soundSwatches");
   const skinsStoreBtn = document.getElementById("skinsStoreBtn");
+  const secretModeBtn = document.getElementById("secretModeBtn");
+  const secretModeOverlay = document.getElementById("secretModeOverlay");
+  const secretModeCloseBtn = document.getElementById("secretModeCloseBtn");
+  const secretDiceInput = document.getElementById("secretDiceInput");
+  const secretDiceValue = document.getElementById("secretDiceValue");
+  const secretRateInput = document.getElementById("secretRateInput");
+  const secretRateValue = document.getElementById("secretRateValue");
+  const secretModeStartBtn = document.getElementById("secretModeStartBtn");
   const previewOverlay = document.getElementById("previewOverlay");
   const previewTitle = document.getElementById("previewTitle");
   const previewStage = document.getElementById("previewStage");
@@ -91,6 +100,10 @@
 
   const confettiLayer = document.getElementById("confetti");
   const zoromePopup = document.getElementById("zoromePopup");
+  const celebrationRays = document.getElementById("celebrationRays");
+  const clearCard = document.getElementById("clearCard");
+  const clearTimeValue = document.getElementById("clearTimeValue");
+  const clearRollsValue = document.getElementById("clearRollsValue");
   const sakibareFlash = document.getElementById("sakibareFlash");
   const sakibareBadge = document.getElementById("sakibareBadge");
   const shutter = document.getElementById("shutter");
@@ -120,12 +133,10 @@
   // color, when it shows, actually precedes a real win) — classic pachislot
   // 予告信頼度 design. Color is picked per-roll from the outcome, not from stage.
   const HEAT_TIERS = [
-    { solid: "#4d9fff", glow: "rgba(77, 159, 255, 0.6)", weight: 40, reliability: 0.15 }, // 青
-    { solid: "#ffd166", glow: "rgba(255, 209, 102, 0.6)", weight: 25, reliability: 0.30 }, // 黄
-    { solid: "#4fd680", glow: "rgba(79, 214, 128, 0.6)", weight: 15, reliability: 0.45 }, // 緑
-    { solid: "#a685ff", glow: "rgba(166, 133, 255, 0.6)", weight: 10, reliability: 0.65 }, // 紫
-    { solid: "#ff5d5d", glow: "rgba(255, 93, 93, 0.6)", weight: 7, reliability: 0.85 }, // 赤
-    { solid: "#ffd700", glow: "rgba(255, 215, 0, 0.7)", weight: 3, reliability: 0.97 }, // 金
+    { solid: "#4d9fff", glow: "rgba(77, 159, 255, 0.6)", weight: 50, reliability: 0.15 }, // 青
+    { solid: "#4fd680", glow: "rgba(79, 214, 128, 0.6)", weight: 30, reliability: 0.40 }, // 緑
+    { solid: "#ff5d5d", glow: "rgba(255, 93, 93, 0.6)", weight: 14, reliability: 0.75 }, // 赤
+    { solid: "#ffd700", glow: "rgba(255, 215, 0, 0.7)", weight: 6, reliability: 0.97 }, // 金
   ];
 
   // pick a tier weighted by (appearance weight × chance that tier fits this
@@ -166,7 +177,7 @@
         dice5: false, dice6: false, dice7: false, dice8: false, dice9: false,
         tray5: false, tray6: false, tray7: false, tray8: false,
         tray9: false, tray10: false, tray11: false, tray12: false, tray13: false,
-        soundPack: false, effectPack: false,
+        soundPack: false, effectPack: false, secretMode: false,
       },
     };
   }
@@ -206,6 +217,8 @@
   let timerHandle = null;
   let selectedStage = null;
   let playValues = [];
+  let secretModeActive = false;
+  let secretWinRate = 0.5;
 
   function randomFace() {
     return 1 + Math.floor(Math.random() * 6);
@@ -381,7 +394,27 @@
       const start = performance.now();
       let last = start;
 
+      function finish() {
+        diceEls.forEach((el) => {
+          const cube = el.querySelector(".die-cube");
+          if (cube) cube.classList.remove("spin");
+        });
+        resolve();
+      }
+
       function frame(now) {
+        if (skipRequested) {
+          // fast-forward the physics synchronously so dice still land in a
+          // settled, non-overlapping spot instead of freezing mid-air
+          for (let i = 0; i < 60; i++) stepDicePhysics(bodies, arenaWidth, arenaHeight, 0.02);
+          bodies.forEach((b) => {
+            b.el.style.left = b.x - b.r + "px";
+            b.el.style.top = b.y - b.r + "px";
+            b.el.style.transform = "rotate(" + b.angle.toFixed(1) + "deg)";
+          });
+          finish();
+          return;
+        }
         const dt = Math.min(0.032, (now - last) / 1000);
         last = now;
         stepDicePhysics(bodies, arenaWidth, arenaHeight, dt);
@@ -393,11 +426,7 @@
         if (now - start < durationMs) {
           requestAnimationFrame(frame);
         } else {
-          diceEls.forEach((el) => {
-            const cube = el.querySelector(".die-cube");
-            if (cube) cube.classList.remove("spin");
-          });
-          resolve();
+          finish();
         }
       }
       requestAnimationFrame(frame);
@@ -557,8 +586,8 @@
 
   function enterPlayScreen(n) {
     selectedStage = n;
-    playValues = n === state.count ? state.values.slice() : Array(n).fill(null);
-    playStageNumEl.textContent = n;
+    playValues = (!secretModeActive && n === state.count) ? state.values.slice() : Array(n).fill(null);
+    playStageNumEl.textContent = secretModeActive ? "裏モード" : n;
     selectScreen.hidden = true;
     playScreen.hidden = false;
     stageStartTime = Date.now();
@@ -571,6 +600,7 @@
   }
 
   function backToSelect() {
+    secretModeActive = false;
     playScreen.hidden = true;
     selectScreen.hidden = false;
     renderSelect();
@@ -587,6 +617,11 @@
       diceEls.push(die);
     }
     scatterRestPositions(diceEls, layout);
+    if (secretModeActive) {
+      probValueEl.textContent = Math.round(secretWinRate * 100) + "%";
+      stageBestTimeEl.textContent = "";
+      return;
+    }
     probValueEl.textContent = formatProbability(selectedStage);
     const best = state.stageBestMs[selectedStage];
     stageBestTimeEl.textContent = best ? "(自己ベスト " + formatTime(best) + ")" : "";
@@ -629,6 +664,41 @@
     setTimeout(() => zoromePopup.classList.remove("show"), 1150);
   }
 
+  function showClearCelebration(elapsedMs, rollCount) {
+    clearTimeValue.textContent = formatTime(elapsedMs);
+    clearRollsValue.textContent = rollCount + "回";
+
+    celebrationRays.classList.remove("show");
+    void celebrationRays.offsetWidth;
+    celebrationRays.classList.add("show");
+
+    clearCard.classList.remove("show");
+    void clearCard.offsetWidth;
+    clearCard.classList.add("show");
+
+    setTimeout(() => {
+      celebrationRays.classList.remove("show");
+      clearCard.classList.remove("show");
+    }, 2150);
+  }
+
+  function spawnSparkles(count) {
+    const sparkles = ["✨", "🌟", "💫", "⭐"];
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement("div");
+      piece.className = "confetti-piece";
+      piece.style.background = "none";
+      piece.style.fontSize = 14 + Math.random() * 14 + "px";
+      piece.style.left = Math.random() * 100 + "vw";
+      piece.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+      const duration = 1.3 + Math.random() * 1.3;
+      piece.style.animationDuration = duration + "s";
+      piece.style.animationDelay = Math.random() * 0.6 + "s";
+      confettiLayer.appendChild(piece);
+      setTimeout(() => piece.remove(), (duration + 0.7) * 1000);
+    }
+  }
+
   let audioCtx = null;
   function getAudioCtx() {
     if (!audioCtx) {
@@ -636,6 +706,25 @@
       if (Ctx) audioCtx = new Ctx();
     }
     return audioCtx;
+  }
+
+  // gives a tonal source a bit of ringing hall/arcade decay — the "wet"
+  // send that makes pachinko chimes feel roomy instead of dry/flat
+  function sendToEcho(ctx, node, opts) {
+    const delayTime = (opts && opts.delayTime) || 0.15;
+    const feedback = (opts && opts.feedback) || 0.32;
+    const wet = (opts && opts.wet) || 0.32;
+    const delay = ctx.createDelay(1.5);
+    delay.delayTime.value = delayTime;
+    const fb = ctx.createGain();
+    fb.gain.value = feedback;
+    const wetGain = ctx.createGain();
+    wetGain.gain.value = wet;
+    node.connect(delay);
+    delay.connect(fb);
+    fb.connect(delay);
+    delay.connect(wetGain);
+    wetGain.connect(ctx.destination);
   }
 
   function playDiceRollSound(durationMs) {
@@ -724,6 +813,11 @@
 
     if (skin === 2) {
       // 和風: pentatonic bell (sine + slow decay, like a small bell/kane)
+      const bellBus = ctx.createGain();
+      bellBus.gain.value = 1;
+      bellBus.connect(ctx.destination);
+      sendToEcho(ctx, bellBus, { delayTime: 0.19, feedback: 0.4, wet: 0.34 });
+
       const notes = [659.25, 783.99, 987.77, 1318.5];
       notes.forEach((freq, i) => {
         const t0 = now + i * 0.14;
@@ -735,7 +829,7 @@
         gain.gain.linearRampToValueAtTime(0.35, t0 + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.9);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(bellBus);
         osc.start(t0);
         osc.stop(t0 + 0.95);
 
@@ -747,7 +841,7 @@
         shimmerGain.gain.linearRampToValueAtTime(0.08, t0 + 0.02);
         shimmerGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.6);
         shimmer.connect(shimmerGain);
-        shimmerGain.connect(ctx.destination);
+        shimmerGain.connect(bellBus);
         shimmer.start(t0);
         shimmer.stop(t0 + 0.65);
       });
@@ -797,6 +891,7 @@
     const master = ctx.createGain();
     master.gain.value = 0.22;
     master.connect(ctx.destination);
+    sendToEcho(ctx, master, { delayTime: 0.13, feedback: 0.34, wet: 0.28 });
 
     notes.forEach((freq, i) => {
       const t0 = now + i * 0.09;
@@ -841,6 +936,7 @@
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
     osc.connect(gain);
     gain.connect(ctx.destination);
+    sendToEcho(ctx, gain, { delayTime: 0.09, feedback: 0.22, wet: 0.22 });
     osc.start(now);
     osc.stop(now + 0.2);
   }
@@ -874,6 +970,7 @@
     pingGain.gain.exponentialRampToValueAtTime(0.001, t2 + 0.3);
     ping.connect(pingGain);
     pingGain.connect(ctx.destination);
+    sendToEcho(ctx, pingGain, { delayTime: 0.1, feedback: 0.3, wet: 0.3 });
     ping.start(t2);
     ping.stop(t2 + 0.35);
   }
@@ -1128,10 +1225,10 @@
     shutter.classList.remove("show");
     void shutter.offsetWidth;
     shutter.classList.add("show");
-    await sleep(460); // lines up with the slam+overshoot in the CSS animation
+    await sleep(900); // lines up with the slam+overshoot in the CSS animation
     playMetalClank();
     vibrate([50]);
-    await sleep(840);
+    await sleep(1000);
     shutter.classList.remove("show");
   }
 
@@ -1278,6 +1375,7 @@
     { id: "tray13", price: "¥300", name: "お皿: デンジャー柄", desc: "黄×黒の警戒ストライプデザイン" },
     { id: "soundPack", price: "¥300", name: "プレミアムサウンド", desc: "ゾロ目が揃った時に鳴る「確定音」を6種類（和風・エレクトロ・キュインA/B/C・ガコッ）から選べるようになります" },
     { id: "effectPack", price: "¥300", name: "プレミアム演出", desc: "節目のステージで「激アツ演出」（金シャッター・キセル風・カットイン・群予告・金の雨）が出るようになります" },
+    { id: "secretMode", price: "¥300", name: "🔓 裏モード", desc: "サイコロの数と的中率を自由に設定して遊べる特殊モードが解放されます（記録には反映されません）" },
   ];
 
   function isOwned(id) {
@@ -1327,6 +1425,34 @@
     storeOverlay.classList.add("show");
   });
   storeCloseBtn.addEventListener("click", () => storeOverlay.classList.remove("show"));
+
+  secretModeBtn.addEventListener("click", () => {
+    if (!state.owned.secretMode) {
+      showToast("裏モードはストアの購入で解放されます");
+      renderStore();
+      storeOverlay.classList.add("show");
+      return;
+    }
+    secretDiceValue.textContent = secretDiceInput.value;
+    secretRateValue.textContent = secretRateInput.value;
+    secretModeOverlay.classList.add("show");
+  });
+  secretModeCloseBtn.addEventListener("click", () => secretModeOverlay.classList.remove("show"));
+  secretModeOverlay.addEventListener("click", (e) => {
+    if (e.target === secretModeOverlay) secretModeOverlay.classList.remove("show");
+  });
+  secretDiceInput.addEventListener("input", () => {
+    secretDiceValue.textContent = secretDiceInput.value;
+  });
+  secretRateInput.addEventListener("input", () => {
+    secretRateValue.textContent = secretRateInput.value;
+  });
+  secretModeStartBtn.addEventListener("click", () => {
+    secretModeActive = true;
+    secretWinRate = Number(secretRateInput.value) / 100;
+    secretModeOverlay.classList.remove("show");
+    enterPlayScreen(Number(secretDiceInput.value));
+  });
   previewCloseBtn.addEventListener("click", () => previewOverlay.classList.remove("show"));
   previewOverlay.addEventListener("click", (e) => {
     if (e.target === previewOverlay) previewOverlay.classList.remove("show");
@@ -1368,7 +1494,7 @@
   });
 
   // ---- test panel (dev/QA only — lets you trigger any effect on demand) ----
-  const HEAT_TIER_NAMES = ["青", "黄", "緑", "紫", "赤", "金"];
+  const HEAT_TIER_NAMES = ["青", "緑", "赤", "金"];
 
   function makeTestBtn(label, onClick, closeFirst) {
     const btn = document.createElement("button");
@@ -1422,6 +1548,8 @@
     [
       ["確定演出(暗転+ｴｲﾘｱﾝ)", () => playKakuteiEffect(), true],
       ["ゾロ目ポップアップ", () => showZoromePopup(), true],
+      ["達成カード(タイム/回数)", () => showClearCelebration(4230, 7), true],
+      ["キラキラ", () => spawnSparkles(30), true],
       ["紙吹雪", () => spawnConfetti(40), true],
       ["広告", () => showAdOverlay(), true],
       ["振動", () => vibrate([40, 60, 40]), false],
@@ -1565,24 +1693,43 @@
     return MILESTONES.includes(count + 1);
   }
 
+  let skipRequested = false;
+
+  // pressing 振る again mid-roll fast-forwards straight to the result
+  // instead of waiting through the rest of the animation
   function sleep(ms) {
+    if (skipRequested) return Promise.resolve();
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async function roll() {
     if (rolling) return;
     rolling = true;
-    rollBtn.disabled = true;
+    skipRequested = false;
+    // intentionally leave rollBtn enabled during the roll — pressing it
+    // again is how the player skips straight to the result
 
     stageRollCount += 1;
     rollCountEl.textContent = String(stageRollCount);
 
     const playCount = selectedStage;
-    const isFrontier = playCount === state.count;
+    const isFrontier = !secretModeActive && playCount === state.count;
     const dice = Array.from(board.children);
 
-    const finalValues = playValues.map(() => randomFace());
-    const matched = allMatch(finalValues);
+    let finalValues, matched;
+    if (secretModeActive) {
+      // 裏モード: the outcome is decided by the user's own dial-in rate,
+      // not the real dice odds — dice values are just for show
+      matched = Math.random() < secretWinRate;
+      const shared = randomFace();
+      finalValues = playValues.map(() => (matched ? shared : randomFace()));
+      if (!matched && finalValues.every((v) => v === finalValues[0])) {
+        finalValues[finalValues.length - 1] = (finalValues[0] % 6) + 1;
+      }
+    } else {
+      finalValues = playValues.map(() => randomFace());
+      matched = allMatch(finalValues);
+    }
     const bigChance = isFrontier && isBigChance(playCount, matched);
     const showBigChance = bigChance && state.owned.effectPack; // 激熱演出はプレミアム限定
     applyHeatColor(pickHeatTierIndex(matched));
@@ -1612,6 +1759,7 @@
         // drag out the suspense on the very last die with a few ticks
         // instead of resolving it right away
         for (let t = 0; t < 4; t++) {
+          if (skipRequested) break;
           playReachTick(i + t);
           await sleep(450);
         }
@@ -1639,24 +1787,31 @@
       showZoromePopup();
 
       const elapsed = Date.now() - stageStartTime;
-      const prevBest = state.stageBestMs[playCount];
-      if (!prevBest || elapsed < prevBest) {
-        state.stageBestMs[playCount] = elapsed;
+      if (!secretModeActive) {
+        const prevBest = state.stageBestMs[playCount];
+        if (!prevBest || elapsed < prevBest) {
+          state.stageBestMs[playCount] = elapsed;
+        }
       }
+
+      showClearCelebration(elapsed, stageRollCount);
 
       if (isFrontier) {
         if (playCount >= MAX_DICE) {
-          setMessage(`🎉 ${MAX_DICE}個すべてゾロ目！完全クリア！（${formatTime(elapsed)}）`, "clear");
+          setMessage(`🎉 ${MAX_DICE}個すべてゾロ目！完全クリア！`, "clear");
         } else {
           state.count += 1;
           state.values = Array(state.count).fill(null);
           if (state.count > state.best) state.best = state.count;
-          setMessage(`ゾロ目！次のステージが解放された！（${formatTime(elapsed)}）`, "win");
+          setMessage("ゾロ目！次のステージが解放された！", "win");
         }
+      } else if (secretModeActive) {
+        setMessage("ゾロ目！（裏モード）", "win");
       } else {
-        setMessage(`ゾロ目！クリア済みステージを再クリア！（${formatTime(elapsed)}）`, "win");
+        setMessage("ゾロ目！クリア済みステージを再クリア！", "win");
       }
       spawnConfetti(isFrontier && playCount >= MAX_DICE ? 80 : 40);
+      spawnSparkles(isFrontier && playCount >= MAX_DICE ? 40 : 20);
       stageStartTime = Date.now();
     } else {
       setMessage("惜しい！もう一度「振る」を押してね");
@@ -1699,6 +1854,10 @@
   }
 
   rollBtn.addEventListener("click", () => {
+    if (rolling) {
+      skipRequested = true;
+      return;
+    }
     if (postWinPending) leavePlayAfterWin();
     else roll();
   });
@@ -1719,6 +1878,30 @@
     topbarEl.hidden = false;
     selectScreen.hidden = false;
   });
+
+  function renderBrainJuice() {
+    brainJuiceLayer.innerHTML = "";
+    const cols = 13;
+    const rows = 10;
+    const cellW = 300 / cols;
+    const cellH = 220 / rows;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const el = document.createElement("span");
+        el.className = "juice-char";
+        el.textContent = "汁";
+        const x = c * cellW + cellW / 2 + (Math.random() * cellW * 0.6 - cellW * 0.3);
+        const y = r * cellH + cellH / 2 + (Math.random() * cellH * 0.6 - cellH * 0.3);
+        el.style.left = x + "px";
+        el.style.top = y + "px";
+        el.style.fontSize = 12 + Math.random() * 10 + "px";
+        el.style.color = "hsl(" + Math.round(Math.random() * 360) + ", 90%, 62%)";
+        el.style.transform = `translate(-50%, -50%) rotate(${Math.round(Math.random() * 50 - 25)}deg)`;
+        brainJuiceLayer.appendChild(el);
+      }
+    }
+  }
+  renderBrainJuice();
 
   renderSelect();
   startTimerLoop();

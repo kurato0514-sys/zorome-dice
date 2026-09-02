@@ -28,19 +28,11 @@
     <!-- ===== オープニング画面 ===== -->
     <section class="screen opening-screen" id="openingScreen">
       <div class="opening-content">
-        <div class="brain-chart">
-          <div class="brain-chart-circle"></div>
-          <span class="brain-label" style="--a:18deg">運</span>
-          <span class="brain-label" style="--a:54deg">熱</span>
-          <span class="brain-label" style="--a:90deg">金</span>
-          <span class="brain-label" style="--a:126deg">汁</span>
-          <span class="brain-label" style="--a:162deg">夢</span>
-          <span class="brain-label" style="--a:198deg">覚醒</span>
-          <span class="brain-label" style="--a:234deg">直感</span>
-          <span class="brain-label" style="--a:270deg">爆</span>
-          <span class="brain-label" style="--a:306deg">神</span>
-          <span class="brain-label" style="--a:342deg">執念</span>
-          <div class="brain-chart-center">脳汁</div>
+        <div class="brain-illust">
+          <svg class="brain-svg" viewBox="0 0 300 220" width="300" height="220" aria-hidden="true">
+            <path class="brain-path" d="M 30,95 C 15,70 20,35 55,20 C 80,8 110,5 140,12 C 155,3 180,2 200,12 C 225,5 250,15 262,35 C 278,45 285,65 275,85 C 285,100 280,120 262,128 C 268,145 260,165 238,172 C 242,188 225,200 208,190 C 205,205 188,208 178,195 C 165,210 148,205 145,190 C 120,198 95,190 88,172 C 65,178 45,168 42,148 C 25,145 15,125 22,105 C 12,102 18,85 30,95 Z" />
+          </svg>
+          <div class="brain-juice-layer" id="brainJuiceLayer"></div>
         </div>
         <h1 class="opening-title">脳汁メーカー<br><span>～Let's ゾロ目～</span></h1>
         <button id="startBtn" class="roll-btn opening-start-btn" type="button">タップしてスタート</button>
@@ -78,6 +70,8 @@
         </div>
         <button id="skinsStoreBtn" class="skins-store-btn" type="button">🛍️ スキン・サウンドをストアで購入する</button>
       </div>
+
+      <button id="secretModeBtn" class="skins-store-btn secret-mode-btn" type="button">🔓 裏モード</button>
     </section>
 
     <!-- ===== プレー画面 ===== -->
@@ -121,6 +115,22 @@
   <div class="confetti-layer" id="confetti"></div>
 
   <div class="zorome-popup" id="zoromePopup">ゾロ目</div>
+
+  <div class="celebration-rays" id="celebrationRays"></div>
+
+  <div class="clear-card" id="clearCard">
+    <div class="clear-card-title">🎉 ゾロ目達成 🎉</div>
+    <div class="clear-card-stats">
+      <div class="clear-stat">
+        <span class="clear-stat-label">タイム</span>
+        <span class="clear-stat-value" id="clearTimeValue">0.0s</span>
+      </div>
+      <div class="clear-stat">
+        <span class="clear-stat-label">回数</span>
+        <span class="clear-stat-value" id="clearRollsValue">1回</span>
+      </div>
+    </div>
+  </div>
 
   <div class="sakibare-flash" id="sakibareFlash"></div>
   <div class="sakibare-badge" id="sakibareBadge">激アツ予感…</div>
@@ -184,6 +194,25 @@
       </div>
       <div class="preview-stage" id="previewStage"></div>
       <div class="preview-actions" id="previewActions"></div>
+    </div>
+  </div>
+
+  <div class="store-overlay" id="secretModeOverlay">
+    <div class="store-card">
+      <div class="store-header">
+        <span>🔓 裏モード</span>
+        <button id="secretModeCloseBtn" class="store-close-btn" type="button">✕</button>
+      </div>
+      <div class="store-note">サイコロの数と的中率を自由に設定して遊べます。記録には反映されません。</div>
+      <div class="secret-mode-field">
+        <label for="secretDiceInput">サイコロの数：<span id="secretDiceValue">6</span>個</label>
+        <input type="range" id="secretDiceInput" min="2" max="30" value="6">
+      </div>
+      <div class="secret-mode-field">
+        <label for="secretRateInput">的中率：<span id="secretRateValue">50</span>%</label>
+        <input type="range" id="secretRateInput" min="0" max="100" value="50">
+      </div>
+      <button id="secretModeStartBtn" class="roll-btn" type="button">このモードで遊ぶ</button>
     </div>
   </div>
 
