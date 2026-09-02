@@ -1240,24 +1240,41 @@ body {
 }
 .cutin-pattern {
   height: 90px;
-  /* dense two-tone reticulated blotches — thin cream netting, like real
-     giraffe coat markings, instead of sparse uniform-color ellipses */
+  /* each "patch" is two overlapping, offset ellipses (not one) so the
+     silhouette reads as an irregular polygon cell rather than a clean
+     ellipse — closer to the jagged reticulated look of a real giraffe coat.
+     three brown tones add depth, and the cream netting between cells is
+     kept thin so the patches read as a connected network, not confetti. */
   background-color: #e8cf9c;
   background-image:
-    radial-gradient(ellipse 22px 16px at 6% 15%, #3d2609 0 56%, transparent 59%),
-    radial-gradient(ellipse 16px 22px at 12% 30%, #5c3812 0 56%, transparent 59%),
-    radial-gradient(ellipse 26px 18px at 30% 8%, #5c3812 0 56%, transparent 59%),
-    radial-gradient(ellipse 18px 24px at 34% 40%, #3d2609 0 56%, transparent 59%),
-    radial-gradient(ellipse 20px 16px at 50% 15%, #3d2609 0 56%, transparent 59%),
-    radial-gradient(ellipse 24px 20px at 58% 55%, #5c3812 0 56%, transparent 59%),
-    radial-gradient(ellipse 16px 20px at 76% 10%, #3d2609 0 56%, transparent 59%),
-    radial-gradient(ellipse 22px 16px at 88% 25%, #5c3812 0 56%, transparent 59%),
-    radial-gradient(ellipse 18px 22px at 4% 65%, #5c3812 0 56%, transparent 59%),
-    radial-gradient(ellipse 24px 18px at 20% 88%, #3d2609 0 56%, transparent 59%),
-    radial-gradient(ellipse 16px 18px at 44% 82%, #5c3812 0 56%, transparent 59%),
-    radial-gradient(ellipse 26px 20px at 64% 90%, #3d2609 0 56%, transparent 59%),
-    radial-gradient(ellipse 18px 24px at 82% 68%, #3d2609 0 56%, transparent 59%),
-    radial-gradient(ellipse 20px 18px at 96% 90%, #5c3812 0 56%, transparent 59%);
+    radial-gradient(ellipse 26px 18px at 8% 20%, #3d2609 0 55%, transparent 58%),
+    radial-gradient(ellipse 16px 22px at 12% 17%, #5c3812 0 50%, transparent 53%),
+    radial-gradient(ellipse 30px 20px at 26% 10%, #5c3812 0 55%, transparent 58%),
+    radial-gradient(ellipse 18px 26px at 23% 13%, #3d2609 0 50%, transparent 53%),
+    radial-gradient(ellipse 22px 28px at 46% 22%, #3d2609 0 55%, transparent 58%),
+    radial-gradient(ellipse 20px 14px at 51% 24%, #7a4a1a 0 50%, transparent 53%),
+    radial-gradient(ellipse 28px 18px at 64% 8%, #5c3812 0 55%, transparent 58%),
+    radial-gradient(ellipse 16px 22px at 60% 11%, #3d2609 0 50%, transparent 53%),
+    radial-gradient(ellipse 24px 30px at 84% 18%, #3d2609 0 55%, transparent 58%),
+    radial-gradient(ellipse 18px 16px at 87% 14%, #5c3812 0 50%, transparent 53%),
+    radial-gradient(ellipse 24px 22px at 6% 52%, #5c3812 0 55%, transparent 58%),
+    radial-gradient(ellipse 16px 18px at 10% 55%, #3d2609 0 50%, transparent 53%),
+    radial-gradient(ellipse 30px 24px at 28% 48%, #3d2609 0 55%, transparent 58%),
+    radial-gradient(ellipse 18px 20px at 25% 44%, #7a4a1a 0 50%, transparent 53%),
+    radial-gradient(ellipse 22px 26px at 50% 58%, #5c3812 0 55%, transparent 58%),
+    radial-gradient(ellipse 20px 16px at 54% 56%, #3d2609 0 50%, transparent 53%),
+    radial-gradient(ellipse 28px 20px at 70% 50%, #3d2609 0 55%, transparent 58%),
+    radial-gradient(ellipse 16px 24px at 74% 53%, #5c3812 0 50%, transparent 53%),
+    radial-gradient(ellipse 24px 28px at 90% 60%, #5c3812 0 55%, transparent 58%),
+    radial-gradient(ellipse 18px 18px at 93% 64%, #3d2609 0 50%, transparent 53%),
+    radial-gradient(ellipse 26px 18px at 14% 82%, #3d2609 0 55%, transparent 58%),
+    radial-gradient(ellipse 16px 22px at 17% 86%, #5c3812 0 50%, transparent 53%),
+    radial-gradient(ellipse 22px 24px at 38% 88%, #5c3812 0 55%, transparent 58%),
+    radial-gradient(ellipse 18px 16px at 41% 84%, #3d2609 0 50%, transparent 53%),
+    radial-gradient(ellipse 30px 18px at 58% 92%, #3d2609 0 55%, transparent 58%),
+    radial-gradient(ellipse 16px 20px at 62% 88%, #7a4a1a 0 50%, transparent 53%),
+    radial-gradient(ellipse 24px 22px at 82% 86%, #5c3812 0 55%, transparent 58%),
+    radial-gradient(ellipse 18px 18px at 85% 82%, #3d2609 0 50%, transparent 53%);
 }
 .cutin-text {
   padding: 14px;

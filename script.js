@@ -1725,7 +1725,12 @@
   let playMsSinceSave = 0;
   function updateTimers() {
     if (!playScreen.hidden) {
-      stageTimeEl.textContent = formatTime(Date.now() - stageStartTime);
+      // freeze the on-screen timer once a round is won — otherwise it just
+      // keeps counting up behind the celebration card, which reads as
+      // "the timer never stops" even though the run itself is over
+      if (!postWinPending) {
+        stageTimeEl.textContent = formatTime(Date.now() - stageStartTime);
+      }
       state.totalPlayMs += 100;
       playMsSinceSave += 100;
       if (playMsSinceSave >= 5000) {
