@@ -5,7 +5,8 @@
   const START_DICE = 2;
   const STORAGE_KEY = "zorome-dice-state-v3";
 
-  // dice skins: 1=default(free) 2=souzu@5 3=manzu@10 4=pinzu@15, rest sold individually in the store
+  // dice skins: 1=default(free) 2-4=stage-gated, 5-9=free but unlocked by
+  // cumulative play (no payment involved for any skin)
   const DICE_CLASS = [
     "", "dice-souzu", "dice-manzu", "dice-pinzu", "dice-dragonball",
     "dice-hanafuda", "dice-maneki", "dice-matsuri", "dice-retro",
@@ -14,10 +15,19 @@
     "ノーマル", "索子(そうず)", "萬子(まんず)", "筒子(ぴんず)", "ドラゴンボール風",
     "花札風", "招き猫・和柄", "夏祭り・花火", "レトロ8bit",
   ];
-  // 0 = free, a number = unlocked at that stage, null = store-exclusive only
-  const DICE_STAGE_REQ = [0, 5, 10, 15, null, null, null, null, null];
+  const DICE_UNLOCK = [
+    { type: "free" },
+    { type: "stage", value: 5 },
+    { type: "stage", value: 10 },
+    { type: "stage", value: 15 },
+    { type: "progress", value: 15 },
+    { type: "progress", value: 30 },
+    { type: "progress", value: 50 },
+    { type: "progress", value: 75 },
+    { type: "progress", value: 100 },
+  ];
 
-  // tray skins: 1=default 2=ocean@5 3=sunset@10 4=galaxy@15, rest sold individually in the store
+  // tray skins: same idea — first few by stage, the rest unlock with play
   const TRAY_CLASS = [
     "", "tray-ocean", "tray-sunset", "tray-galaxy",
     "tray-hanafuda", "tray-maneki", "tray-matsuri", "tray-retro",
@@ -28,7 +38,21 @@
     "花札風", "招き猫・和柄", "夏祭り・花火", "レトロ8bit",
     "キリン柄", "シマウマ柄", "テントウムシ柄", "トラ柄", "デンジャー柄",
   ];
-  const TRAY_STAGE_REQ = [0, 5, 10, 15, null, null, null, null, null, null, null, null, null];
+  const TRAY_UNLOCK = [
+    { type: "free" },
+    { type: "stage", value: 5 },
+    { type: "stage", value: 10 },
+    { type: "stage", value: 15 },
+    { type: "progress", value: 20 },
+    { type: "progress", value: 35 },
+    { type: "progress", value: 55 },
+    { type: "progress", value: 80 },
+    { type: "progress", value: 105 },
+    { type: "progress", value: 130 },
+    { type: "progress", value: 155 },
+    { type: "progress", value: 180 },
+    { type: "progress", value: 210 },
+  ];
 
   // sound skins: 1=default(free) 2=和風 3=エレクトロ (both 2,3 unlocked together via soundPack purchase)
   const SOUND_SKIN_NAMES = ["ノーマル", "和風", "エレクトロ", "キュインA(レーザー)", "キュインB(パワーアップ)", "キュインC(RPG風)", "ガコッ(機械式)"];
@@ -173,10 +197,9 @@
       soundSkin: 1,
       shakeEnabled: false,
       noAds: false,
+      totalRolls: 0,
+      totalPlayMs: 0,
       owned: {
-        dice5: false, dice6: false, dice7: false, dice8: false, dice9: false,
-        tray5: false, tray6: false, tray7: false, tray8: false,
-        tray9: false, tray10: false, tray11: false, tray12: false, tray13: false,
         soundPack: false, effectPack: false, secretMode: false,
       },
     };
@@ -434,16 +457,25 @@
   }
 
   // ---- skin unlock levels (each store-exclusive skin is sold separately) ----
+  function getProgressScore() {
+    // every ~15s of play counts the same as one roll, so both count and
+    // time contribute toward unlocking skins
+    return state.totalRolls + Math.floor(state.totalPlayMs / 15000);
+  }
+
+  function isUnlockRuleMet(rule) {
+    if (rule.type === "free") return true;
+    if (rule.type === "stage") return state.best >= rule.value;
+    if (rule.type === "progress") return getProgressScore() >= rule.value;
+    return false;
+  }
+
   function isDiceSkinUnlocked(id) {
-    const req = DICE_STAGE_REQ[id - 1];
-    if (req !== null) return state.best >= req;
-    return !!state.owned["dice" + id];
+    return isUnlockRuleMet(DICE_UNLOCK[id - 1]);
   }
 
   function isTraySkinUnlocked(id) {
-    const req = TRAY_STAGE_REQ[id - 1];
-    if (req !== null) return state.best >= req;
-    return !!state.owned["tray" + id];
+    return isUnlockRuleMet(TRAY_UNLOCK[id - 1]);
   }
 
   function isSoundUnlocked(id) {
@@ -456,12 +488,12 @@
     soundSwatchesEl.innerHTML = "";
     for (let i = 1; i <= DICE_CLASS.length; i++) {
       diceSwatchesEl.appendChild(
-        makeSwatch("dice", i, isDiceSkinUnlocked(i), state.diceSkin === i, DICE_STAGE_REQ[i - 1], DICE_SKIN_NAMES[i - 1])
+        makeSwatch("dice", i, isDiceSkinUnlocked(i), state.diceSkin === i, DICE_UNLOCK[i - 1], DICE_SKIN_NAMES[i - 1])
       );
     }
     for (let i = 1; i <= TRAY_CLASS.length; i++) {
       traySwatchesEl.appendChild(
-        makeSwatch("tray", i, isTraySkinUnlocked(i), state.traySkin === i, TRAY_STAGE_REQ[i - 1], TRAY_SKIN_NAMES[i - 1])
+        makeSwatch("tray", i, isTraySkinUnlocked(i), state.traySkin === i, TRAY_UNLOCK[i - 1], TRAY_SKIN_NAMES[i - 1])
       );
     }
     for (let i = 1; i <= SOUND_SKIN_NAMES.length; i++) {
@@ -471,7 +503,7 @@
     }
   }
 
-  function makeSwatch(kind, skinId, unlocked, selected, stageReq, name, icon) {
+  function makeSwatch(kind, skinId, unlocked, selected, lockRule, name, icon) {
     const el = document.createElement("button");
     el.type = "button";
     el.className = "swatch" + (unlocked ? "" : " locked") + (selected ? " selected" : "");
@@ -480,11 +512,23 @@
     el.title = name || "";
     if (icon && unlocked) el.textContent = icon;
     if (!unlocked) el.innerHTML = '<span class="swatch-lock">🔒</span>';
-    el.addEventListener("click", () => openSkinPreview(kind, skinId, unlocked, name, stageReq));
+    el.addEventListener("click", () => openSkinPreview(kind, skinId, unlocked, name, lockRule));
     return el;
   }
 
-  function openSkinPreview(kind, skinId, unlocked, name, stageReq) {
+  // lockRule: "store" (sound), or a {type:"stage"|"progress", value} rule object
+  function describeLockRule(lockRule) {
+    if (lockRule === "store") {
+      return { isStore: true, label: "ストアで購入する" };
+    }
+    if (lockRule.type === "stage") {
+      return { isStore: false, label: `ステージ${lockRule.value}到達で解放` };
+    }
+    const remaining = Math.max(0, lockRule.value - getProgressScore());
+    return { isStore: false, label: `プレイを重ねると解放（あと${remaining}）` };
+  }
+
+  function openSkinPreview(kind, skinId, unlocked, name, lockRule) {
     previewTitle.textContent = name || "";
     previewStage.innerHTML = "";
 
@@ -528,12 +572,12 @@
       });
       previewActions.appendChild(useBtn);
     } else {
-      const isStoreOnly = stageReq === "store" || !stageReq;
+      const info = describeLockRule(lockRule);
       const lockBtn = document.createElement("button");
       lockBtn.type = "button";
-      lockBtn.className = "store-buy-btn" + (isStoreOnly ? "" : " owned");
-      lockBtn.textContent = isStoreOnly ? "ストアで購入する" : `ステージ${stageReq}到達で解放`;
-      if (isStoreOnly) {
+      lockBtn.className = "store-buy-btn" + (info.isStore ? "" : " owned");
+      lockBtn.textContent = info.label;
+      if (info.isStore) {
         lockBtn.addEventListener("click", () => {
           previewOverlay.classList.remove("show");
           renderStore();
@@ -595,6 +639,7 @@
     rollCountEl.textContent = "0";
     postWinPending = false;
     rollBtn.querySelector(".roll-btn-label").textContent = "振る";
+    hideClearCelebration();
     renderPlay();
     setMessage("サイコロを振って、ゾロ目を出そう！");
   }
@@ -675,11 +720,12 @@
     clearCard.classList.remove("show");
     void clearCard.offsetWidth;
     clearCard.classList.add("show");
+    // stays up until the player presses ホームに戻る — see hideClearCelebration()
+  }
 
-    setTimeout(() => {
-      celebrationRays.classList.remove("show");
-      clearCard.classList.remove("show");
-    }, 2150);
+  function hideClearCelebration() {
+    celebrationRays.classList.remove("show");
+    clearCard.classList.remove("show");
   }
 
   function spawnSparkles(count) {
@@ -939,6 +985,37 @@
     sendToEcho(ctx, gain, { delayTime: 0.09, feedback: 0.22, wet: 0.22 });
     osc.start(now);
     osc.stop(now + 0.2);
+  }
+
+  function playReachSiren(durationMs) {
+    // the classic pachislot reach alarm — an alternating two-tone siren
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const now = ctx.currentTime;
+    const duration = durationMs / 1000;
+
+    const osc = ctx.createOscillator();
+    osc.type = "square";
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.1, now + 0.06);
+    gain.gain.setValueAtTime(0.1, Math.max(now + 0.06, now + duration - 0.12));
+    gain.gain.linearRampToValueAtTime(0, now + duration);
+
+    const baseFreq = 740;
+    const swing = 220;
+    const stepDur = 0.14;
+    for (let t = now; t < now + duration; t += stepDur) {
+      osc.frequency.setValueAtTime(baseFreq, t);
+      osc.frequency.setValueAtTime(baseFreq + swing, t + stepDur / 2);
+    }
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    sendToEcho(ctx, gain, { delayTime: 0.12, feedback: 0.24, wet: 0.2 });
+    osc.start(now);
+    osc.stop(now + duration);
   }
 
   function playSakibareSound() {
@@ -1295,29 +1372,6 @@
     mobPreview.innerHTML = "";
   }
 
-  async function playGoldRain() {
-    sakibareBadge.textContent = "プレミアム演出！";
-    sakibareBadge.classList.remove("show");
-    void sakibareBadge.offsetWidth;
-    sakibareBadge.classList.add("show");
-    const coins = ["💰", "✨", "🌟"];
-    for (let i = 0; i < 22; i++) {
-      const piece = document.createElement("div");
-      piece.className = "confetti-piece";
-      piece.style.background = "none";
-      piece.style.fontSize = "18px";
-      piece.style.left = Math.random() * 100 + "vw";
-      piece.textContent = coins[Math.floor(Math.random() * coins.length)];
-      const duration = 1 + Math.random() * 0.8;
-      piece.style.animationDuration = duration + "s";
-      piece.style.animationDelay = Math.random() * 0.4 + "s";
-      confettiLayer.appendChild(piece);
-      setTimeout(() => piece.remove(), (duration + 0.5) * 1000);
-    }
-    await sleep(1300);
-    sakibareBadge.classList.remove("show");
-  }
-
   async function playSakibare() {
     playSakibareSound();
     vibrate([30, 40, 30, 40, 80]);
@@ -1325,13 +1379,12 @@
     void sakibareFlash.offsetWidth;
     sakibareFlash.classList.add("show");
 
-    const pool = ["shutter", "kiseru", "cutin", "mob", "goldRain"];
+    const pool = ["shutter", "kiseru", "cutin", "mob"];
     const type = pool[Math.floor(Math.random() * pool.length)];
 
     if (type === "shutter") await playShutter();
     else if (type === "kiseru") await playKiseru();
     else if (type === "cutin") await playCutin();
-    else if (type === "goldRain") await playGoldRain();
     else await playMobPreview();
 
     sakibareFlash.classList.remove("show");
@@ -1359,22 +1412,8 @@
   // ---- ads & store (mock — no real payment/ad network wired up) ----
   const STORE_ITEMS = [
     { id: "noAds", price: "¥300", name: "広告を非表示にする", desc: "ゾロ目が揃うたびに出る広告を消します" },
-    { id: "dice5", price: "¥300", name: "サイコロ: ドラゴンボール風", desc: "星の数で目を表す限定デザイン" },
-    { id: "dice6", price: "¥300", name: "サイコロ: 花札風", desc: "紅×金の花札柄デザイン" },
-    { id: "dice7", price: "¥300", name: "サイコロ: 招き猫・和柄", desc: "金の招き猫デザイン" },
-    { id: "dice8", price: "¥300", name: "サイコロ: 夏祭り・花火", desc: "藍色に花火が咲くデザイン" },
-    { id: "dice9", price: "¥300", name: "サイコロ: レトロ8bit", desc: "蛍光グリーンのドット絵デザイン" },
-    { id: "tray5", price: "¥300", name: "お皿: 花札風", desc: "紅のフェルト台デザイン" },
-    { id: "tray6", price: "¥300", name: "お皿: 招き猫・和柄", desc: "金と紅の縁起物デザイン" },
-    { id: "tray7", price: "¥300", name: "お皿: 夏祭り・花火", desc: "藍色の浴衣柄デザイン" },
-    { id: "tray8", price: "¥300", name: "お皿: レトロ8bit", desc: "スキャンライン背景デザイン" },
-    { id: "tray9", price: "¥300", name: "お皿: キリン柄", desc: "アース系のキリン模様デザイン" },
-    { id: "tray10", price: "¥300", name: "お皿: シマウマ柄", desc: "白黒ストライプのシマウマ模様デザイン" },
-    { id: "tray11", price: "¥300", name: "お皿: テントウムシ柄", desc: "赤×黒の水玉デザイン" },
-    { id: "tray12", price: "¥300", name: "お皿: トラ柄", desc: "オレンジ×黒のトラ縞デザイン" },
-    { id: "tray13", price: "¥300", name: "お皿: デンジャー柄", desc: "黄×黒の警戒ストライプデザイン" },
     { id: "soundPack", price: "¥300", name: "プレミアムサウンド", desc: "ゾロ目が揃った時に鳴る「確定音」を6種類（和風・エレクトロ・キュインA/B/C・ガコッ）から選べるようになります" },
-    { id: "effectPack", price: "¥300", name: "プレミアム演出", desc: "節目のステージで「激アツ演出」（金シャッター・キセル風・カットイン・群予告・金の雨）が出るようになります" },
+    { id: "effectPack", price: "¥300", name: "プレミアム演出", desc: "節目のステージで「激アツ演出」（金シャッター・キセル風・カットイン・群予告）が出るようになります" },
     { id: "secretMode", price: "¥300", name: "🔓 裏モード", desc: "サイコロの数と的中率を自由に設定して遊べる特殊モードが解放されます（記録には反映されません）" },
   ];
 
@@ -1461,6 +1500,11 @@
     if (e.target === storeOverlay) storeOverlay.classList.remove("show");
   });
 
+  // set while an ad overlay's promise is pending, so any button that
+  // dismisses the overlay (not just adCloseBtn) can resolve it — otherwise
+  // whoever is awaiting showAdOverlay() hangs forever
+  let closeAdOverlay = null;
+
   function showAdOverlay() {
     return new Promise((resolve) => {
       let remaining = 5;
@@ -1481,14 +1525,16 @@
         clearInterval(interval);
         adOverlay.classList.remove("show");
         adCloseBtn.removeEventListener("click", close);
+        closeAdOverlay = null;
         resolve();
       }
       adCloseBtn.addEventListener("click", close);
+      closeAdOverlay = close;
     });
   }
 
   adRemoveBtn.addEventListener("click", () => {
-    adOverlay.classList.remove("show");
+    if (closeAdOverlay) closeAdOverlay();
     renderStore();
     storeOverlay.classList.add("show");
   });
@@ -1539,7 +1585,6 @@
       ["キセル風", playKiseru],
       ["カットイン", playCutin],
       ["群予告", playMobPreview],
-      ["金の雨", playGoldRain],
     ].forEach(([label, fn]) => {
       testEffectBtnsEl.appendChild(makeTestBtn(label, () => fn(), true));
     });
@@ -1568,6 +1613,7 @@
       ["確定音:ガコッ(機械式)", () => playGako()],
       ["転がる音", () => playDiceRollSound(650)],
       ["リーチ音", () => playReachTick(3)],
+      ["リーチサイレン", () => playReachSiren(1800)],
       ["先バレ音:現行", () => playSakibareSound()],
       ["先バレ候補:ドキュンB(パンチ)", () => playDokyunB()],
       ["先バレ候補:ドキュンC(爆発)", () => playDokyunC()],
@@ -1676,8 +1722,17 @@
     }
   });
 
+  let playMsSinceSave = 0;
   function updateTimers() {
-    stageTimeEl.textContent = formatTime(Date.now() - stageStartTime);
+    if (!playScreen.hidden) {
+      stageTimeEl.textContent = formatTime(Date.now() - stageStartTime);
+      state.totalPlayMs += 100;
+      playMsSinceSave += 100;
+      if (playMsSinceSave >= 5000) {
+        playMsSinceSave = 0;
+        saveState();
+      }
+    }
   }
 
   function startTimerLoop() {
@@ -1711,6 +1766,7 @@
 
     stageRollCount += 1;
     rollCountEl.textContent = String(stageRollCount);
+    state.totalRolls += 1;
 
     const playCount = selectedStage;
     const isFrontier = !secretModeActive && playCount === state.count;
@@ -1732,6 +1788,9 @@
     }
     const bigChance = isFrontier && isBigChance(playCount, matched);
     const showBigChance = bigChance && state.owned.effectPack; // 激熱演出はプレミアム限定
+    // the alien "kakutei" peek is rare and — like a real premonition cue —
+    // flashes just before the last die locks in, not after the win is shown
+    const willPeekAlien = matched && (bigChance || Math.random() < 0.12);
     applyHeatColor(pickHeatTierIndex(matched));
 
     if (showBigChance) await playSakibare();
@@ -1756,6 +1815,7 @@
         reachBadge.classList.add("show");
         setMessage("リーチ！！", "win");
         playDiceRollSound(1800);
+        playReachSiren(1800);
         // drag out the suspense on the very last die with a few ticks
         // instead of resolving it right away
         for (let t = 0; t < 4; t++) {
@@ -1763,6 +1823,7 @@
           playReachTick(i + t);
           await sleep(450);
         }
+        if (willPeekAlien && !skipRequested) await playKakuteiEffect();
       } else {
         await sleep(180);
       }
@@ -1776,11 +1837,6 @@
     if (isFrontier) state.values = finalValues;
 
     if (matched) {
-      // the blackout+alien "kakutei" confirm is always shown for a big-chance
-      // win, but only sometimes for an ordinary match so it stays special
-      if (bigChance || Math.random() < 0.35) {
-        await playKakuteiEffect();
-      }
       dice.forEach((d) => d.classList.add("matched"));
       vibrate([40, 60, 40]);
       playKakuteiChime();
@@ -1844,6 +1900,7 @@
     rolling = true;
     rollBtn.disabled = true;
     postWinPending = false;
+    hideClearCelebration();
     if (!state.noAds) {
       await sleep(200);
       await showAdOverlay();
